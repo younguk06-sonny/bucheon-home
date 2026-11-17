@@ -8,7 +8,7 @@ import json, os, re, sys, time, urllib.parse, urllib.request
 
 KEY = os.environ.get('DATA_GO_KR_KEY', '').strip()
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'kapt.json')
-SGG = ['41192', '41194', '41196', '41190']   # 원미구·소사구·오정구 (구 부천시 코드도 함께 시도)
+SGG = ['41190', '41192', '41194', '41196']   # 원미구·소사구·오정구 (구 부천시 코드도 함께 시도)
 B = 'https://apis.data.go.kr/1613000/'
 # 서비스 버전이 바뀌어 왔으므로 최신부터 차례로 시도 (2026년 기준 목록 V4, 기본정보 V5)
 LISTS = [B + 'AptListService4/getSigunguAptList4', B + 'AptListService3/getSigunguAptList3']
@@ -80,7 +80,7 @@ def main():
     global LIST, BASIS, DTL
     seen = {}
     for sgg in SGG:
-        page = 1
+        page = 1; before = len(seen)
         while True:
             if LIST is None:
                 LIST, r = pick(LISTS, sigunguCode=sgg, pageNo=page, numOfRows=1000)
@@ -96,6 +96,7 @@ def main():
             if page * 1000 >= (r['total'] or 0):
                 break
             page += 1
+        print(f'  시군구 {sgg}: +{len(seen) - before}곳')
     print(f'K-apt 단지 목록: {len(seen)}곳')
     if not seen:
         print('목록을 받지 못해 기존 자료를 유지합니다. (서비스 활용신청 여부를 확인하세요)')

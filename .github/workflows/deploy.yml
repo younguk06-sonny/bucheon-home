@@ -40,8 +40,8 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: data/kapt.json
-          key: kapt-${{ steps.week.outputs.w }}
-          restore-keys: kapt-
+          key: kapt2-${{ steps.week.outputs.w }}
+          restore-keys: kapt2-
 
       - name: K-apt 단지 정보 받기 (세대수·지하철역 도보 시간, 인증키가 있을 때만)
         env:

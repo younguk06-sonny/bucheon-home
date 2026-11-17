@@ -71,12 +71,20 @@ for k, c in acc.items():
 # ---------- K-apt 단지 정보 덧붙이기 (data/kapt.json 이 있을 때) ----------
 KAPT = os.path.join(os.path.dirname(__file__), '..', 'data', 'kapt.json')
 WALK = {'5분이내': 5, '5~10분이내': 10, '10~15분이내': 15, '15~20분이내': 20, '20분초과': 25}
+REGION = '부천|상동|중동|송내|소사본|소사|역곡|심곡본|심곡|원종|고강|괴안|범박|옥길|여월|오정|작동|도당|약대|춘의|원미|내동|삼정|성곡|계수'
+SUBS = [('e편한세상', '이편한세상'), ('E편한세상', '이편한세상'), ('SK-VIEW', '에스케이뷰'), ('SKVIEW', '에스케이뷰'), ('SK뷰', '에스케이뷰'), ('SK', '에스케이'),
+        ('VIEW', '뷰'), ('LG', '엘지'), ('GS', '지에스'), ('(공단)', '주공'), ('공단', '주공'), ('휴먼시아', '휴먼시아'), ('펠리스', '팰리스'), ('파크뷰', '파크뷰')]
 def norm(n, dong=''):
-    n = re.sub(r'\(.*?\)', lambda m: m.group(0)[1:-1], n or '')
-    n = re.sub(r'[\s·,.\-]|아파트|APT', '', n, flags=re.I)
-    if dong:
-        n = n.replace(dong, '').replace(dong.rstrip('동'), '', 1) if n.startswith(dong) or n.startswith(dong.rstrip('동')) else n
-    return n.replace('부천', '')
+    n = (n or '').strip()
+    for a_, b_ in SUBS:
+        n = n.replace(a_, b_)
+    n = re.sub(r'\(([^)]*\d[^)]*|[^)]*동)\)', '', n)            # (301동)·(2-16) 같은 동·지번 표기는 버림
+    n = re.sub(r'\((.*?)\)', r'\1', n)                           # (신성미소지움) 같은 단지명은 살림
+    n = re.sub(r'[\s·,.\-\'’]|아파트|APT|관리사무소', '', n, flags=re.I)
+    n = n.replace('마을', '')
+    n = re.sub(r'^(?:(?:' + REGION + r')동?)+(?!역)', '', n)      # 앞에 붙은 동네 이름 (역 이름은 남김)
+    n = re.sub(r'(?:' + REGION + r')동?$', '', n)                # 뒤에 붙은 동네 이름
+    return n
 def bigr(s):
     return {s[i:i + 2] for i in range(len(s) - 1)} or {s}
 def score(a, b):
@@ -88,7 +96,7 @@ def score(a, b):
     if (da or db) and da != db:   # 1단지·2단지처럼 숫자가 다르면 다른 단지
         return 0
     short, long_ = sorted((a, b), key=len)
-    if short in long_ and len(short) / len(long_) >= 0.6:
+    if short in long_ and len(short) / len(long_) >= 0.5:
         return 0.9
     x, y = bigr(a), bigr(b)
     return len(x & y) / len(x | y)
@@ -121,6 +129,9 @@ if os.path.exists(KAPT):
             if best.get('wsub') in WALK:
                 r['k']['wmin'] = WALK[best['wsub']]
     print(f'K-apt 연결: {hit}/{len(rows)}개 단지')
+    for sc, i, kid, best in pairs:
+        if i in used_r and kid in used_k and rows[i].get('k', {}).get('name') == best.get('name') and sc < 1:
+            print(f"  짝(점수 {sc:.2f}): {rows[i]['n']} ↔ {best.get('name')}")
     left = [k for ks in by_dong.values() for k in ks if id(k) not in used_k]
     print(f'연결 안 된 K-apt 단지 {len(left)}곳:')
     for k in left:
