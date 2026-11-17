@@ -1,0 +1,58 @@
+# 분양시장 레이더(New-Build_Rader)가 아침에 모은 국토부 실거래 자료로 부천 단지 자료를 새로 만들고
+# GitHub Pages로 배포합니다. 따로 넣을 키(시크릿)는 없습니다.
+name: 자료 만들기 및 배포
+
+on:
+  schedule:
+    - cron: '17 23 * * *'   # 매일 08:17 (한국시간) — 레이더 수집(07:17) 끝난 뒤
+  workflow_dispatch:        # Actions 탭에서 'Run workflow'로 바로 실행
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 분양시장 레이더 실거래 자료 받기
+        uses: actions/checkout@v4
+        with:
+          repository: younguk06-sonny/New-Build_Rader
+          path: _src
+          sparse-checkout: |
+            cache/rt
+
+      - name: 부천 단지 자료 만들기
+        run: python3 scripts/build_data.py _src
+
+      - name: 배포할 파일 모으기
+        run: |
+          mkdir -p _site
+          cp -r index.html style.css app.js sw.js manifest.webmanifest icons data _site/
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

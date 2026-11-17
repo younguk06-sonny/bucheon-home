@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>부천 집 비교 - 갈아타기 후보 비교</title>
+<meta name="description" content="부천 송내·중동·상동 아파트 갈아타기 후보의 시세·실거래·학교·위치를 한 화면에서 비교합니다.">
+<meta name="theme-color" content="#f3f5f8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="부천 집 비교">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
+<div class="wrap">
+  <header>
+    <h1><img src="icons/icon-192.png" alt="" width="30" height="30"> 부천 집 비교</h1>
+    <p class="sub">지금 집(송내역파인푸르지오1단지 26평)과 후보 3곳, 그리고 조건으로 골라 지도에서 고르는 후보 4를 비교합니다. <span id="asOf"></span></p>
+  </header>
+
+  <div class="grid5" id="tiles"></div>
+
+  <section class="card">
+    <div class="toolbar">
+      <h2>부천 지도</h2>
+      <div class="chips" id="mapChips"></div>
+    </div>
+    <div class="jmap" id="jmap">
+      <div id="kmap"></div>
+      <svg id="jsvg" aria-label="부천시 지도"></svg>
+      <div class="jlayer" id="jlayer"></div>
+      <div class="jctl" id="jctl">
+        <button class="jbtn" id="zIn" aria-label="확대">＋</button>
+        <button class="jbtn" id="zOut" aria-label="축소">－</button>
+      </div>
+      <div class="jview">
+        <button class="jbtn on" id="vCand">후보 지역</button><button class="jbtn" id="vJs">중동·상동</button><button class="jbtn" id="vAll">부천 전체</button>
+      </div>
+      <div class="jhint" id="jhint"></div>
+      <div class="jinfo" id="jinfo"></div>
+      <div class="mapmsg" id="mapMsg">지도를 불러오는 중…</div>
+    </div>
+    <div class="legend" id="mapLegend"></div>
+  </section>
+
+  <section class="card" id="pick">
+    <div class="toolbar">
+      <h2>후보 4 고르기 <span class="note">조건에 맞는 단지가 지도 위에 가격으로 표시돼요</span></h2>
+      <span class="note" id="pickCount"></span>
+    </div>
+    <div class="filters">
+      <div class="fgrp"><span class="flab">동</span><div class="chips" id="fDong"></div></div>
+      <div class="fgrp"><span class="flab">대표 거래가</span>
+        <input type="number" id="fMin" step="0.5" min="0" value="6" aria-label="최소 가격(억)"> ~ <input type="number" id="fMax" step="0.5" min="0" value="9" aria-label="최대 가격(억)"> 억</div>
+      <div class="fgrp"><span class="flab">면적</span><div class="chips" id="fArea"></div></div>
+      <div class="fgrp"><span class="flab">준공</span><div class="chips" id="fAge"></div></div>
+      <div class="fgrp"><span class="flab">거래</span><div class="chips" id="fDeal"></div></div>
+      <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명 검색 (예: 라일락, 미리내, 반달)" aria-label="단지명 검색"></div>
+      <div class="fgrp"><button class="chip" id="fView" style="--c:var(--s4)">지도 화면 안만</button></div>
+      <div class="fgrp"><span class="flab">정렬</span><select id="fSort" class="btn"><option value="amt">가격 낮은 순</option><option value="amtd">가격 높은 순</option><option value="n12">거래 많은 순</option><option value="by">새 아파트 순</option><option value="py">평당가 낮은 순</option></select></div>
+    </div>
+    <div class="plist" id="plist"></div>
+    <p class="note">대표 거래가 = 최근 12개월 월별 실거래 중위가격의 거래량 가중평균(12개월 거래가 1건 이하면 36개월). 여러 평형이 섞인 단지는 평형마다 값이 다르니, 대표 전용면적을 함께 보세요.</p>
+  </section>
+
+  <section class="card">
+    <div class="toolbar">
+      <h2>최근 5년 시세 (연평균 실거래가)</h2>
+      <div class="seg"><button class="btn on" id="vChart">차트</button><button class="btn" id="vTable">표</button></div>
+    </div>
+    <div class="legend" id="lineLegend"></div>
+    <div class="rel" id="chartBox"></div>
+    <div id="trendTable" class="scroll" style="display:none"></div>
+    <p class="note">후보 1~3과 지금 집은 해당 평형의 국토부 실거래 연평균(디아파트 집계). 후보 4는 단지 전체 거래의 연평균이라 평형이 섞일 수 있고, 2024년부터 있습니다.</p>
+  </section>
+
+  <section class="card"><h2>단지 개요</h2><div class="scroll" id="overview"></div></section>
+
+  <section class="card">
+    <h2>현재 시세 · 최근 실거래 · 매물</h2>
+    <div class="scroll" id="market"></div>
+    <p class="note">매물 수·호가는 매일 바뀝니다. 계약 전에는 각 단지 링크에서 다시 확인하세요.</p>
+  </section>
+
+  <section class="card">
+    <h2>초·중학교 배치</h2>
+    <div class="scroll" id="schools"></div>
+    <p class="note">초등학교는 통학구역, 중학교는 학교군 안에서 지망·추첨으로 정해집니다. 정확한 배정은 부천교육지원청 학구도에서 주소로 확인하세요.</p>
+  </section>
+
+  <section class="card">
+    <h2>갈아타기 자금 간단 계산</h2>
+    <div class="calc">
+      <label class="note">지금 집 매도 예상가(억)<input type="number" step="0.01" id="cSell" value="6.05"></label>
+      <label class="note">매수 대상<select id="cTarget" class="btn"></select></label>
+      <label class="note">매수가(억)<input type="number" step="0.01" id="cBuy"></label>
+    </div>
+    <div class="out" id="cOut"></div>
+    <p class="note">취득세는 1주택·전용 85㎡ 이하 근사(6억 이하 1%, 6~9억 누진, 지방교육세 포함). 중개보수는 매도·매수 각각 상한요율 근사. 대출 대환·중도상환수수료·이사비는 빠져 있습니다.</p>
+  </section>
+
+  <section class="card"><h2>출처</h2><div class="note" id="sources"></div></section>
+</div>
+<div class="tip" id="tip"></div>
+<script src="app.js?v=1"></script>
+</body>
+</html>
