@@ -75,7 +75,7 @@ const S = {
   slots: (() => { const v = LS.get('slots', null); if (Array.isArray(v) && v.length === 5) return v; const s = DEFAULT_SLOTS.slice(); const o = LS.get('sel4', null); if (o) s[4] = o; return s; })(),
   active: 4,
   f: Object.assign({ dongAll: true, dong: { 중동: true, 상동: true }, min: 6, max: 9, area: 'all', age: 'all', deal: 1, hh: 0, walk: 'all', q: '', sort: 'amt', inView: false }, LS.get('filter2', {})),
-  viewBB: null, moreDong: false, geo: LS.get('geo', {}), mapMode: null,
+  viewBB: null, moreDong: false, geo: LS.get('geo', {}), addr: LS.get('addr', {}), mapMode: null,
 };
 const all = () => S.items.filter(Boolean);
 const slotOf = (name) => S.slots.indexOf(name);
@@ -88,7 +88,7 @@ function autoProfile(c) { // 조사 자료가 없는 단지: 실거래 자료로
   const yr = {}; YEARS.forEach((y) => { yr[y] = c.yr[y] != null ? eok(c.yr[y]) : null; });
   return {
     name: c.n, short: c.n.length <= 11 ? c.n : c.n.replace(/^.*?\((.+)\)$/, '$1'), pyeong: c.area ? `대표 전용 약 ${Math.round(c.area)}㎡` : '',
-    addr: c.k?.addr || '부천시 ' + c.dong, built: c.k?.use ? `${c.k.use.slice(0, 4)}.${c.k.use.slice(4, 6)}` : c.by ? String(c.by) : '—', age: c.by ? `${THIS_YEAR - c.by + 1}년차` : '',
+    addr: c.k?.addr || S.addr[c.n] || '부천시 ' + c.dong, built: c.k?.use ? `${c.k.use.slice(0, 4)}.${c.k.use.slice(4, 6)}` : c.by ? String(c.by) : '—', age: c.by ? `${THIS_YEAR - c.by + 1}년차` : '',
     hh: c.k?.hh ? `${c.k.hh.toLocaleString()}세대${c.k.dongs ? ' · ' + c.k.dongs + '개동' : ''}` : '', floors: c.k?.top ? `최고 ${c.k.top}층` : '—',
     builder: c.k?.builder || '—', far: '—', parking: c.k?.park ? `${c.k.park.toLocaleString()}대${c.k.hh ? ` (세대당 ${(c.k.park / c.k.hh).toFixed(2)})` : ''}` : '—', heat: c.k?.heat || '—',
     subway: c.k?.station ? `${c.k.line ? c.k.line + ' ' : ''}${c.k.station} 도보 ${c.k.wsub || ''}` : '—',
@@ -143,6 +143,7 @@ const Geo = {
     const r = await new Promise((res) => new kakao.maps.services.Places().keywordSearch(`부천 ${dong} ${a.q || cleanName(key)}`, (d, st) => res(st === kakao.maps.services.Status.OK ? d : []), { size: 5 }));
     const hit = r.find((x) => /아파트/.test(x.category_name) && (!dong || (x.address_name || '').includes(dong))) || r.find((x) => (x.address_name || '').includes('부천')) || null;
     S.geo[key] = hit ? [+hit.y, +hit.x] : 0;
+    if (hit) { S.addr[key] = hit.road_address_name || hit.address_name || ''; clearTimeout(Geo._ta); Geo._ta = setTimeout(() => LS.set('addr', S.addr), 600); }
     clearTimeout(Geo._t); Geo._t = setTimeout(() => LS.set('geo', S.geo), 600);
     return S.geo[key];
   },
@@ -545,6 +546,8 @@ const head = (list) => `<thead><tr><th></th>${list.map((a) => `<th><span class="
 const rows = (list, spec) => spec.map(([lab, fn]) => `<tr><th>${lab}</th>${list.map((a) => `<td>${fn(a) ?? '—'}</td>`).join('')}</tr>`).join('');
 function renderTables() {
   const list = all(), base = S.items[0]?.price;
+  const noK = list.filter((a) => !a.mine && !PROFILES[a.rt] && !cxByName(a.rt)?.k);
+  $('#overviewNote').innerHTML = noK.length ? `<b>${noK.map((a) => esc(a.short || a.name)).join(', ')}</b>의 세대수·시공사·층수·주차·난방·지하철 정보가 비어 있어요. ${S.data?.kaptAsOf ? '국토부 K-apt(공동주택관리정보시스템)에 등록되지 않은 단지예요(대개 150세대 미만).' : '이 항목들은 국토부 K-apt 공공데이터에서 받아오는데, 아직 저장소에 인증키가 없어 받지 못했어요. 인증키를 넣으면 다음 갱신 때 부천 전체 단지가 채워집니다.'}` : '';
   $('#overview').innerHTML = `<table>${head(list)}<tbody>${rows(list, [
     ['비교 평형', (a) => esc(a.pyeong)], ['주소', (a) => esc(a.addr)], ['준공', (a) => esc(a.built) + (a.age ? ` <span class="pill">${esc(a.age)}</span>` : '')],
     ['규모', (a) => esc(a.hh || '—')], ['층수', (a) => esc(a.floors)], ['시공사', (a) => esc(a.builder)], ['용적률/건폐율', (a) => esc(a.far)],
