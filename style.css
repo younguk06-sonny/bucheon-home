@@ -206,3 +206,8 @@ section.card.closed{padding-top:12px;padding-bottom:12px}
 .fsum span{font-size:12px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .fsum b{font-size:12px;color:var(--accent);white-space:nowrap}
 @media(max-width:700px){.fsum{display:flex}#pick.fclosed #filters{display:none}#pick:not(.fclosed) .fsum b::after{content:''}}
+
+.tsel{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--text-muted);margin-top:8px}
+.tsel select{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text-primary);border-radius:8px;padding:5px 6px;width:100%}
+.ty.tysel{background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:8px;padding:6px 8px;margin:0 -8px}
+.selpill{background:var(--accent);color:#fff}

@@ -73,7 +73,7 @@ const DEFAULT_SLOTS = [null, '라일락마을(신성미소지움)', '팰리스�
 const S = {
   data: null, bounds: null, items: [], poi: null,
   slots: (() => { const v = LS.get('slots', null); if (Array.isArray(v) && v.length >= 3) { const t = v.slice(0, 3); if (!t[1] && !t[2]) { const rest = v.slice(3).filter(Boolean); t[1] = rest[0] || null; t[2] = rest[1] || null; } return t; } return DEFAULT_SLOTS.slice(); })(),
-  active: 1,
+  active: 1, slotTypes: (LS.get('slotTypes', null) || [null, null, null]).slice(0, 3),
   f: Object.assign({ dongAll: true, dong: { 중동: true, 상동: true }, min: 6, max: 9, area: 'all', age: 'all', deal: 1, hh: 0, walk: 'all', q: '', sort: 'amt', inView: false }, LS.get('filter3', {})),
   viewBB: null, moreDong: false, geo: LS.get('geo', {}), addr: LS.get('addr', {}), mapMode: null,
 };
@@ -109,6 +109,34 @@ function mineProfile(m) { // 직접 입력한 우리 집
     lat: m.lat ?? null, lng: m.lng ?? null, rt: MINE, mine: true, links: [], areaM: m.area ? +m.area : null,
   };
 }
+const profEx = (p) => { const m = String(p.pyeong || '').match(/전용\s*약?\s*([\d.]+)/); return m ? +m[1] : null; };
+function applyType(a, i) { // 칸마다 고른 타입으로 평형·시세·최근 거래를 맞춤
+  if (!a || a.mine) return a;
+  const ts = typesOf(a); a.typeList = ts; if (!ts.length) return a;
+  const defEx = PROFILES[a.rt] ? profEx(a) : null;
+  let sel = S.slotTypes[i];
+  let t = sel != null ? ts.find((x) => Math.abs(x.ex - sel) < 0.6) : null;
+  if (!t) t = defEx ? ts.find((x) => Math.abs(x.ex - defEx) < 1.2) : ts.slice().sort((x, y) => ((y.tr?.n12 || 0) - (x.tr?.n12 || 0)) || ((y.tr?.n || 0) - (x.tr?.n || 0)))[0];
+  if (!t) return a;
+  a.selEx = t.ex; a.selKey = ts.indexOf(t);
+  a.pyeong = `${t.label && !/평$/.test(t.label) ? t.label + ' · ' : ''}${t.py}평형 (전용 ${t.ex.toFixed(2)}㎡)`;
+  const isDef = defEx && Math.abs(t.ex - defEx) < 1.2 && (sel == null || ts.indexOf(t) === ts.findIndex((x) => Math.abs(x.ex - defEx) < 1.2));
+  if (!isDef) { // 조사 자료의 기본 평형이 아니면 실거래로 시세를 다시 잡음
+    if (t.tr?.avg12) { a.price = eok(t.tr.avg12); a.priceNote = `이 타입 12개월 평균 (${t.tr.n12}건)`; }
+    else if (t.tr?.amt) { a.price = eok(t.tr.amt); a.priceNote = `이 타입 최근 거래 (${t.tr.last.slice(2, 4)}.${t.tr.last.slice(4, 6)})`; }
+    else { a.priceNote = '이 타입은 최근 거래가 없어 단지 대표가'; }
+    const c = cxByName(a.rt);
+    if (c?.deals?.length) { const ds = c.deals.filter((d) => Math.abs(d[1] - t.ex) < 1.2).slice(0, 4); if (ds.length) a.recent = ds.map((d) => [`${d[0].slice(0, 4)}.${d[0].slice(4, 6)}.${d[0].slice(6, 8)}`, `${d[2]}층 · ${Math.round(d[1])}㎡`, fmt(eok(d[3]))]); }
+    if (PROFILES[a.rt]) { a.jeonse = null; a.listing = '링크에서 확인 (조사한 매물은 기본 평형 기준)'; a.trend = Object.assign({}, a.trend); a.mixedNote = true; }
+  }
+  return a;
+}
+function setType(i, idx) {
+  const a = S.items[i]; const t = a?.typeList?.[idx]; if (!t) return;
+  S.slotTypes[i] = t.ex; LS.set('slotTypes', S.slotTypes);
+  $('#cBuy').dataset.touched = ''; $('#cSell').dataset.touched = '';
+  buildItems(); renderAll();
+}
 function buildItems() {
   S.items = S.slots.map((name, i) => {
     if (!name) return null;
@@ -118,14 +146,14 @@ function buildItems() {
     const base = p ? Object.assign({}, p) : autoProfile(c);
     const g = S.geo[name];
     if (g) { base.lat = g[0]; base.lng = g[1]; }
-    return Object.assign(base, { id: i, role: ROLES[i] });
+    return applyType(Object.assign(base, { id: i, role: ROLES[i] }), i);
   });
 }
 function setSlot(i, name) {
   const j = name ? slotOf(name) : -1;
   if (j >= 0 && j !== i && !(j === 0 && !S.slots[i])) S.slots[j] = S.slots[i]; // 이미 다른 칸에 있으면 두 칸을 맞바꿈
-  S.slots[i] = name;
-  LS.set('slots', S.slots);
+  S.slots[i] = name; S.slotTypes[i] = null;
+  LS.set('slots', S.slots); LS.set('slotTypes', S.slotTypes);
   buildItems(); renderAll();
   const it = S.items[i];
   if (it && it.lat == null && !it.mine) Geo.locate(it).then(() => { buildItems(); renderAll(); MapView.focus(S.items[i]); });
@@ -162,6 +190,7 @@ function renderTiles() {
       <div class="big" style="margin-top:6px">${fmt(a.price)}</div>
       <div class="meta">${d != null ? `우리 집 대비 ${d >= 0 ? '+' : ''}${d.toFixed(2)}억` : esc(a.priceNote || '')}</div>
       <div class="meta" style="margin-top:4px">${esc(a.built || '')}${a.hh ? ' · ' + esc(a.hh) : ''}</div>
+      ${a.typeList && a.typeList.length > 1 ? `<label class="tsel">타입<select data-type="${i}">${a.typeList.map((t, k) => `<option value="${k}"${k === a.selKey ? ' selected' : ''}>${t.label && !/평$/.test(t.label) ? esc(t.label) + ' · ' : ''}${t.py}평형 · 전용 ${t.ex.toFixed(1)}㎡${t.tr?.n12 ? ` (${t.tr.n12}건)` : ''}</option>`).join('')}</select></label>` : ''}
       <div class="tbtns">${i === 0 ? `<button class="btn sm" data-home="1">${a.mine ? '수정' : '다시 등록'}</button>` : `<button class="btn sm" data-pickslot="${i}">바꾸기</button>`}<button class="btn sm" data-clear="${i}" aria-label="빼기">${i === 0 ? '등록 해제' : '빼기'}</button></div></div>`;
   }).join('');
 }
@@ -194,7 +223,7 @@ function typeCell(a) {
   const ts = typesOf(a);
   if (!ts.length) return '<span class="note">타입 정보 없음</span>';
   const src = S.data?.typesSrc === 'sample' ? ' <span class="note">(일부 거래)</span>' : '';
-  return ts.map((t) => `<div class="ty"><div class="ty1"><b>${t.label ? esc(t.label) + ' · ' : ''}${t.py}평형</b>${t.hh ? ` <span class="pill">${t.hh.toLocaleString()}세대</span>` : ''}</div>
+  return ts.map((t) => `<div class="ty${a.selEx != null && Math.abs(t.ex - a.selEx) < 0.01 && (t.py + '평형') === (a.pyeong.match(/(\d+평형)/) || [])[1] ? ' tysel' : ''}"><div class="ty1">${a.selEx != null && Math.abs(t.ex - a.selEx) < 0.01 && (t.py + '평형') === (a.pyeong.match(/(\d+평형)/) || [])[1] ? '<span class="pill selpill">비교 중</span> ' : ''}<b>${t.label ? esc(t.label) + ' · ' : ''}${t.py}평형</b>${t.hh ? ` <span class="pill">${t.hh.toLocaleString()}세대</span>` : ''}</div>
     <div class="ty2">전용 ${t.ex.toFixed(2)}㎡ · 공급 ${t.sup ? t.sup.toFixed(2) + '㎡' : '약 ' + Math.round(t.supE) + '㎡<span class="est">추정</span>'}</div>
     <div class="ty2">방 ${t.rooms[0]} · 욕실 ${t.rooms[1]}${t.roomsEst ? '<span class="est">일반 구성</span>' : ''}</div>
     ${t.tr ? `<div class="ty3">${t.tr.avg12 ? `12개월 평균 <b>${fmt(eok(t.tr.avg12))}</b> (${t.tr.n12}건) · ` : ''}최근 ${fmt(eok(t.tr.amt))} <span class="note">${t.tr.last.slice(2, 4)}.${t.tr.last.slice(4, 6)} ${t.tr.fl || ''}층</span>${src}</div>` : ''}</div>`).join('') +
@@ -712,7 +741,9 @@ async function main() {
   $('#fToggle').onclick = () => { const o = $('#pick').classList.toggle('fclosed'); LS.set('fOpen', !o); };
   $('#plist').onclick = (e) => { const c = e.target.closest('.pc'); if (!c) return; const n = c.dataset.n; if (S.slots[S.active] === n) { if (S.active) setSlot(S.active, null); } else setSlot(S.active, n); };
   $('#slotSel').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) setActive(+b.dataset.s); };
+  $('#tiles').onchange = (e) => { const sel = e.target.closest('[data-type]'); if (sel) setType(+sel.dataset.type, +sel.value); };
   $('#tiles').onclick = (e) => {
+    if (e.target.closest('select,label.tsel')) return;
     if (e.target.closest('[data-home]')) { openHome(); return; }
     const ps = e.target.closest('[data-pickslot]'); if (ps) { S.active = +ps.dataset.pickslot; renderTiles(); renderPick(); $('#pick').scrollIntoView({ behavior: 'smooth' }); return; }
     const cl = e.target.closest('[data-clear]'); if (cl) { if (+cl.dataset.clear === 0 && S.slots[0] === MINE) LS.set('myhome', null); setSlot(+cl.dataset.clear, null); return; }
