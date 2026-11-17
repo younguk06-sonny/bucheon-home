@@ -9,9 +9,21 @@ import json, os, re, sys, time, urllib.parse, urllib.request
 KEY = os.environ.get('DATA_GO_KR_KEY', '').strip()
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'kapt.json')
 SGG = ['41192', '41194', '41196', '41190']   # 원미구·소사구·오정구 (구 부천시 코드도 함께 시도)
-LIST = 'https://apis.data.go.kr/1613000/AptListService3/getSigunguAptList3'
-BASIS = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusBassInfoV4'
-DTL = 'https://apis.data.go.kr/1613000/AptBasisInfoServiceV4/getAphusDtlInfoV4'
+B = 'https://apis.data.go.kr/1613000/'
+# 서비스 버전이 바뀌어 왔으므로 최신부터 차례로 시도 (2026년 기준 목록 V4, 기본정보 V5)
+LISTS = [B + 'AptListService4/getSigunguAptList4', B + 'AptListService3/getSigunguAptList3']
+BASISES = [B + 'AptBasisInfoServiceV5/getAphusBassInfoV5', B + 'AptBasisInfoServiceV4/getAphusBassInfoV4']
+DTLS = [B + 'AptBasisInfoServiceV5/getAphusDtlInfoV5', B + 'AptBasisInfoServiceV4/getAphusDtlInfoV4']
+LIST = BASIS = DTL = None
+
+
+def pick(urls, **params):
+    for u in urls:
+        r = call(u, **params)
+        if r and r['items']:
+            print('  사용:', u.rsplit('/', 2)[-2] + '/' + u.rsplit('/', 1)[-1])
+            return u, r
+    return None, None
 
 
 def call(url, **params):
@@ -56,11 +68,17 @@ def main():
     if not KEY:
         print('DATA_GO_KR_KEY 가 없어 K-apt 자료를 건너뜁니다 (기존 data/kapt.json 유지).')
         return
+    global LIST, BASIS, DTL
     seen = {}
     for sgg in SGG:
         page = 1
         while True:
-            r = call(LIST, sigunguCode=sgg, pageNo=page, numOfRows=1000)
+            if LIST is None:
+                LIST, r = pick(LISTS, sigunguCode=sgg, pageNo=page, numOfRows=1000)
+                if LIST is None:
+                    break
+            else:
+                r = call(LIST, sigunguCode=sgg, pageNo=page, numOfRows=1000)
             if not r or not r['items']:
                 break
             for it in r['items']:
@@ -73,10 +91,15 @@ def main():
     if not seen:
         print('목록을 받지 못해 기존 자료를 유지합니다. (서비스 활용신청 여부를 확인하세요)')
         return
+    first = next(iter(seen))
+    BASIS, _ = pick(BASISES, kaptCode=first)
+    DTL, _ = pick(DTLS, kaptCode=first)
+    if not BASIS:
+        print('기본정보 서비스를 부르지 못했습니다. (국토교통부_공동주택 기본 정보제공 서비스 활용신청 확인)'); return
     out = []
     for i, (code, it) in enumerate(seen.items()):
         b = (call(BASIS, kaptCode=code) or {}).get('items') or [{}]
-        d = (call(DTL, kaptCode=code) or {}).get('items') or [{}]
+        d = ((call(DTL, kaptCode=code) if DTL else None) or {}).get('items') or [{}]
         b, d = b[0] if isinstance(b, list) else b, d[0] if isinstance(d, list) else d
         num = lambda v: int(float(v)) if str(v or '').strip() not in ('', 'None') else None
         out.append({
