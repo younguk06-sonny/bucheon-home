@@ -2,7 +2,7 @@
 부천시 아파트 단지별 요약을 만들어 data/bucheon.json 으로 저장합니다.
 사용법: python3 scripts/build_data.py <레이더 저장소 경로>
 """
-import json, os, sys, glob
+import json, os, re, sys, glob
 
 SRC = sys.argv[1] if len(sys.argv) > 1 else '_src'
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'bucheon.json')
@@ -68,9 +68,63 @@ for k, c in acc.items():
         'area': round(amt / (mp / 10), 1) if amt and mp else None,  # 대표 전용면적(㎡) 추정
         'yr': years, 'q': qs, 'last': [lm, acc_m[lm][2], acc_m[lm][0]], 'deals': deals,
     })
+# ---------- K-apt 단지 정보 덧붙이기 (data/kapt.json 이 있을 때) ----------
+KAPT = os.path.join(os.path.dirname(__file__), '..', 'data', 'kapt.json')
+WALK = {'5분이내': 5, '5~10분이내': 10, '10~15분이내': 15, '15~20분이내': 20, '20분초과': 25}
+def norm(n, dong=''):
+    n = re.sub(r'\(.*?\)', lambda m: m.group(0)[1:-1], n or '')
+    n = re.sub(r'[\s·,.\-]|아파트|APT', '', n, flags=re.I)
+    if dong:
+        n = n.replace(dong, '').replace(dong.rstrip('동'), '', 1) if n.startswith(dong) or n.startswith(dong.rstrip('동')) else n
+    return n.replace('부천', '')
+def bigr(s):
+    return {s[i:i + 2] for i in range(len(s) - 1)} or {s}
+def score(a, b):
+    if not a or not b:
+        return 0
+    if a == b:
+        return 1
+    da, db = re.findall(r'\d+', a), re.findall(r'\d+', b)
+    if (da or db) and da != db:   # 1단지·2단지처럼 숫자가 다르면 다른 단지
+        return 0
+    short, long_ = sorted((a, b), key=len)
+    if short in long_ and len(short) / len(long_) >= 0.6:
+        return 0.9
+    x, y = bigr(a), bigr(b)
+    return len(x & y) / len(x | y)
+kapt_asof = None
+if os.path.exists(KAPT):
+    with open(KAPT, encoding='utf-8') as fh:
+        kj = json.load(fh)
+    kapt_asof = kj.get('asOf')
+    by_dong = {}
+    for k in kj.get('apts', []):
+        dong = re.sub(r'\d+동$', '동', (k.get('dong') or '').strip()) or ''
+        k['_n'] = norm(k.get('name'), dong)
+        by_dong.setdefault(dong, []).append(k)
+    pairs = []
+    for i, r in enumerate(rows):
+        rn = norm(r['n'], r['dong'])
+        for j, k in enumerate(by_dong.get(r['dong'], [])):
+            sc = score(rn, k['_n'])
+            if sc >= 0.55:
+                pairs.append((sc, i, id(k), k))
+    pairs.sort(key=lambda x: -x[0])
+    used_r, used_k, hit = set(), set(), 0
+    for sc, i, kid, best in pairs:   # 점수 높은 짝부터 하나씩 (한 단지에 하나만)
+        if i in used_r or kid in used_k:
+            continue
+        used_r.add(i); used_k.add(kid); r = rows[i]
+        if True:
+            hit += 1
+            r['k'] = {key: best.get(key) for key in ('name', 'hh', 'dongs', 'use', 'builder', 'top', 'heat', 'park', 'line', 'station', 'wsub', 'wbus', 'addr') if best.get(key) not in (None, '')}
+            if best.get('wsub') in WALK:
+                r['k']['wmin'] = WALK[best['wsub']]
+    print(f'K-apt 연결: {hit}/{len(rows)}개 단지')
+
 rows.sort(key=lambda r: -(r['n12'] or 0))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as fh:
-    json.dump({'asOf': months[-1], 'from': months[0], 'quarters': quarters, 'src': '국토교통부 아파트 매매 실거래가 (분양시장 레이더 수집)',
+    json.dump({'asOf': months[-1], 'from': months[0], 'quarters': quarters, 'src': '국토교통부 아파트 매매 실거래가 (분양시장 레이더 수집)', 'kaptAsOf': kapt_asof,
                'cx': rows}, fh, ensure_ascii=False, separators=(',', ':'))
 print(f'{len(rows)}개 단지 · {months[0]}~{months[-1]} → {os.path.normpath(OUT)}')

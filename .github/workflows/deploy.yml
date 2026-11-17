@@ -33,6 +33,11 @@ jobs:
           sparse-checkout: |
             cache/rt
 
+      - name: K-apt 단지 정보 받기 (세대수·지하철역 도보 시간, 인증키가 있을 때만)
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: python3 scripts/fetch_kapt.py
+
       - name: 부천 단지 자료 만들기
         run: python3 scripts/build_data.py _src
 

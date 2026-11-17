@@ -156,3 +156,11 @@ a{color:var(--accent)}
 .pc.sel{border:2px solid var(--sc,var(--s4));background:color-mix(in srgb,var(--sc,var(--s4)) 8%,var(--surface-1))}
 .pc .add{font-size:11px;color:var(--text-muted);font-weight:700}
 .pc:hover .add{color:var(--accent)}
+
+.warnline{margin:0 0 8px;color:#b4570c}
+:root[data-theme="dark"] .warnline{color:#f0a35e}
+.warnline:empty{display:none}
+.mk-poi{display:flex;align-items:center;gap:3px;cursor:default;font-family:"Noto Sans KR",system-ui,sans-serif;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+.mk-poi i{font-style:normal;font-size:10px;font-weight:800;color:#fff;border:1.5px solid #fff;border-radius:6px;padding:1px 4px;line-height:1.3}
+.mk-poi span{font-size:10.5px;font-weight:700;color:#2b333b;background:rgba(255,255,255,.92);border-radius:4px;padding:0 4px;white-space:nowrap}
+.mk-poi.mart i{background:#1971c2}.mk-poi.daiso i{background:#c92a2a;border-radius:50%;padding:1px 5px}.mk-poi.market i{background:#2b8a3e}

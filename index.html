@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
@@ -62,10 +62,13 @@
       <div class="fgrp"><span class="flab">면적</span><div class="chips" id="fArea"></div></div>
       <div class="fgrp"><span class="flab">준공</span><div class="chips" id="fAge"></div></div>
       <div class="fgrp"><span class="flab">거래</span><div class="chips" id="fDeal"></div></div>
+      <div class="fgrp"><span class="flab">세대수</span><div class="chips" id="fHh"></div></div>
+      <div class="fgrp"><span class="flab">역세권</span><div class="chips" id="fWalk"></div></div>
       <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명·동 검색 (이름으로 찾으면 다른 조건은 무시)" aria-label="단지명 검색"></div>
       <div class="fgrp"><button class="chip" id="fView" style="--c:var(--s4)">지도 화면 안만</button></div>
       <div class="fgrp"><span class="flab">정렬</span><select id="fSort" class="btn"><option value="amt">가격 낮은 순</option><option value="amtd">가격 높은 순</option><option value="n12">거래 많은 순</option><option value="by">새 아파트 순</option><option value="py">평당가 낮은 순</option></select></div>
     </div>
+    <p class="note warnline" id="pickNote"></p>
     <div class="plist" id="plist"></div>
     <p class="note">대표 거래가 = 최근 12개월 월별 실거래 중위가격의 거래량 가중평균(12개월 거래가 1건 이하면 36개월). 여러 평형이 섞인 단지는 평형마다 값이 다르니, 대표 전용면적을 함께 보세요.</p>
   </section>
@@ -109,6 +112,6 @@
   <section class="card"><h2>출처</h2><div class="note" id="sources"></div></section>
 </div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=2"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
