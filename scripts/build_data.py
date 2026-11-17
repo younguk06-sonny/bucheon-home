@@ -128,7 +128,25 @@ if os.path.exists(KAPT):
             r['k'] = {key: best.get(key) for key in ('name', 'hh', 'dongs', 'use', 'builder', 'top', 'heat', 'park', 'line', 'station', 'wsub', 'wbus', 'addr') if best.get(key) not in (None, '')}
             if best.get('wsub') in WALK:
                 r['k']['wmin'] = WALK[best['wsub']]
+    # 2차: K-apt가 여러 단지를 하나로 묶어 둔 경우 (예: '송내역 파인푸르지오' = 1단지+2단지)
+    strip = lambda x: re.sub(r'\d+(?:차|단지)?|단지|차', '', x)
+    for ks in by_dong.values():
+        for k in ks:
+            if id(k) in used_k:
+                continue
+            group = [i for i, r in enumerate(rows) if i not in used_r and r['dong'] == re.sub(r'\d+동$', '동', (k.get('dong') or '').strip()) and strip(norm(r['n'], r['dong'])) == strip(k['_n']) and strip(k['_n'])]
+            if len(group) >= 2:
+                used_k.add(id(k))
+                for i in group:
+                    used_r.add(i); hit += 1
+                    rows[i]['k'] = {key: k.get(key) for key in ('name', 'dongs', 'use', 'builder', 'top', 'heat', 'line', 'station', 'wsub', 'wbus', 'addr') if k.get(key) not in (None, '')}
+                    if k.get('hh'): rows[i]['k']['hhAll'] = k['hh']
+                    if k.get('wsub') in WALK: rows[i]['k']['wmin'] = WALK[k['wsub']]
+                print(f"  묶음 연결: {k.get('name')} → {[rows[i]['n'] for i in group]}")
     print(f'K-apt 연결: {hit}/{len(rows)}개 단지')
+    for nm in ('래미안어반비스타', '송내역파인푸르지오1단지', '라일락마을(경남아너스빌)'):
+        r = next((x for x in rows if x['n'] == nm), None)
+        print(f"  확인 {nm}: {r.get('k', {}).get('name') if r else '없음'} · 세대수 {r.get('k', {}).get('hh') if r else ''}")
     for sc, i, kid, best in pairs:
         if i in used_r and kid in used_k and rows[i].get('k', {}).get('name') == best.get('name') and sc < 1:
             print(f"  짝(점수 {sc:.2f}): {rows[i]['n']} ↔ {best.get('name')}")

@@ -89,7 +89,7 @@ function autoProfile(c) { // 조사 자료가 없는 단지: 실거래 자료로
   return {
     name: c.n, short: c.n.length <= 11 ? c.n : c.n.replace(/^.*?\((.+)\)$/, '$1'), pyeong: c.area ? `대표 전용 약 ${Math.round(c.area)}㎡` : '',
     addr: c.k?.addr || S.addr[c.n] || '부천시 ' + c.dong, built: c.k?.use ? `${c.k.use.slice(0, 4)}.${c.k.use.slice(4, 6)}` : c.by ? String(c.by) : '—', age: c.by ? `${THIS_YEAR - c.by + 1}년차` : '',
-    hh: c.k?.hh ? `${c.k.hh.toLocaleString()}세대${c.k.dongs ? ' · ' + c.k.dongs + '개동' : ''}` : '', floors: c.k?.top ? `최고 ${c.k.top}층` : '—',
+    hh: c.k?.hh ? `${c.k.hh.toLocaleString()}세대${c.k.dongs ? ' · ' + c.k.dongs + '개동' : ''}` : c.k?.hhAll ? `${c.k.name} 전체 ${c.k.hhAll.toLocaleString()}세대` : '', floors: c.k?.top ? `최고 ${c.k.top}층` : '—',
     builder: c.k?.builder || '—', far: '—', parking: c.k?.park ? `${c.k.park.toLocaleString()}대${c.k.hh ? ` (세대당 ${(c.k.park / c.k.hh).toFixed(2)})` : ''}` : '—', heat: c.k?.heat || '—',
     subway: c.k?.station ? `${c.k.line ? c.k.line + ' ' : ''}${c.k.station} 도보 ${c.k.wsub || ''}` : '—',
     price: eok(c.amt), priceNote: c.n12 >= 2 ? '최근 12개월 대표 거래가' : '36개월 대표 거래가', jeonse: null,
