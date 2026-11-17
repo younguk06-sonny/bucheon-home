@@ -68,6 +68,15 @@ def main():
     if not KEY:
         print('DATA_GO_KR_KEY 가 없어 K-apt 자료를 건너뜁니다 (기존 data/kapt.json 유지).')
         return
+    if os.path.exists(OUT) and not os.environ.get('KAPT_FORCE'):
+        try:
+            with open(OUT, encoding='utf-8') as fh:
+                old = json.load(fh)
+            age = (time.time() - time.mktime(time.strptime(old.get('asOf', '2000-01-01'), '%Y-%m-%d'))) / 86400
+            if age < 7 and old.get('apts'):
+                print(f"K-apt 자료가 {old['asOf']} 것으로 일주일이 안 돼 그대로 씁니다 ({len(old['apts'])}곳)."); return
+        except Exception:
+            pass
     global LIST, BASIS, DTL
     seen = {}
     for sgg in SGG:

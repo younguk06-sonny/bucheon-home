@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -32,6 +32,16 @@ jobs:
           path: _src
           sparse-checkout: |
             cache/rt
+
+      - name: 이번 주 K-apt 자료 꺼내기 (일주일에 한 번만 새로 받음)
+        id: week
+        run: echo "w=$(date -u +%G-%V)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        with:
+          path: data/kapt.json
+          key: kapt-${{ steps.week.outputs.w }}
+          restore-keys: kapt-
 
       - name: K-apt 단지 정보 받기 (세대수·지하철역 도보 시간, 인증키가 있을 때만)
         env:
