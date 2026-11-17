@@ -145,3 +145,14 @@ a{color:var(--accent)}
 .zr.sel{outline:3px solid color-mix(in srgb,var(--c) 40%,transparent)}
 .stn{transform:translate(-50%,6px);font-size:10.5px;font-weight:700;color:var(--text-secondary);white-space:nowrap;pointer-events:none!important;text-shadow:0 0 3px var(--map-bg),0 0 3px var(--map-bg)}
 .gul{transform:translate(-50%,-50%);font-size:14px;font-weight:800;color:var(--land-stroke);pointer-events:none!important;letter-spacing:.1em}
+
+.slotrow{margin-bottom:12px}
+.chip small{font-weight:500;color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.on small{color:var(--text-secondary)}
+.tile.act{box-shadow:0 0 0 2px var(--accent)}
+.tbtns{display:flex;gap:6px;margin-top:8px}
+.btn.sm{font-size:11.5px;padding:3px 8px;border-radius:7px}
+.putrow{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.pc.sel{border:2px solid var(--sc,var(--s4));background:color-mix(in srgb,var(--sc,var(--s4)) 8%,var(--surface-1))}
+.pc .add{font-size:11px;color:var(--text-muted);font-weight:700}
+.pc:hover .add{color:var(--accent)}

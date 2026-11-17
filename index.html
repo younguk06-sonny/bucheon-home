@@ -14,14 +14,14 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=1">
+<link rel="stylesheet" href="style.css?v=2">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
 <div class="wrap">
   <header>
     <h1><img src="icons/icon-192.png" alt="" width="30" height="30"> 부천 집 비교</h1>
-    <p class="sub">지금 집(송내역파인푸르지오1단지 26평)과 후보 3곳, 그리고 조건으로 골라 지도에서 고르는 후보 4를 비교합니다. <span id="asOf"></span></p>
+    <p class="sub">지금 집과 후보 4곳을 부천 아파트 중에서 조건으로 골라 비교합니다. 칸을 고른 뒤 목록이나 지도에서 단지를 누르면 그 칸에 들어갑니다. <span id="asOf"></span></p>
   </header>
 
   <div class="grid5" id="tiles"></div>
@@ -51,9 +51,10 @@
 
   <section class="card" id="pick">
     <div class="toolbar">
-      <h2>후보 4 고르기 <span class="note">조건에 맞는 단지가 지도 위에 가격으로 표시돼요</span></h2>
+      <h2>단지 고르기 <span class="note">조건에 맞는 부천 아파트가 아래 목록과 지도 위 가격 칩으로 나와요</span></h2>
       <span class="note" id="pickCount"></span>
     </div>
+    <div class="fgrp slotrow"><span class="flab">넣을 칸</span><div class="chips" id="slotSel"></div></div>
     <div class="filters">
       <div class="fgrp"><span class="flab">동</span><div class="chips" id="fDong"></div></div>
       <div class="fgrp"><span class="flab">대표 거래가</span>
@@ -61,7 +62,7 @@
       <div class="fgrp"><span class="flab">면적</span><div class="chips" id="fArea"></div></div>
       <div class="fgrp"><span class="flab">준공</span><div class="chips" id="fAge"></div></div>
       <div class="fgrp"><span class="flab">거래</span><div class="chips" id="fDeal"></div></div>
-      <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명 검색 (예: 라일락, 미리내, 반달)" aria-label="단지명 검색"></div>
+      <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명·동 검색 (이름으로 찾으면 다른 조건은 무시)" aria-label="단지명 검색"></div>
       <div class="fgrp"><button class="chip" id="fView" style="--c:var(--s4)">지도 화면 안만</button></div>
       <div class="fgrp"><span class="flab">정렬</span><select id="fSort" class="btn"><option value="amt">가격 낮은 순</option><option value="amtd">가격 높은 순</option><option value="n12">거래 많은 순</option><option value="by">새 아파트 순</option><option value="py">평당가 낮은 순</option></select></div>
     </div>
@@ -77,7 +78,7 @@
     <div class="legend" id="lineLegend"></div>
     <div class="rel" id="chartBox"></div>
     <div id="trendTable" class="scroll" style="display:none"></div>
-    <p class="note">후보 1~3과 지금 집은 해당 평형의 국토부 실거래 연평균(디아파트 집계). 후보 4는 단지 전체 거래의 연평균이라 평형이 섞일 수 있고, 2024년부터 있습니다.</p>
+    <p class="note">조사 자료가 있는 4곳은 해당 평형의 국토부 실거래 연평균(디아파트 집계, 실선). 그 밖의 단지는 단지 전체 거래의 연평균이라 평형이 섞일 수 있고 2024년부터 있습니다(점선).</p>
   </section>
 
   <section class="card"><h2>단지 개요</h2><div class="scroll" id="overview"></div></section>
@@ -108,6 +109,6 @@
   <section class="card"><h2>출처</h2><div class="note" id="sources"></div></section>
 </div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=1"></script>
+<script src="app.js?v=2"></script>
 </body>
 </html>
