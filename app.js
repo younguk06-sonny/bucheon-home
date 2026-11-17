@@ -1,4 +1,4 @@
-/* 부천 집 비교 — 지금 집 + 후보 3곳 + 중동·상동에서 고르는 후보 4
+/* 부천 집 비교 — 우리 집(누구나 직접 등록, 이 기기에만 저장) + 후보 1~4를 부천 아파트 중에서 골라 비교
    지도: 카카오맵 (부천 밖으로는 나가지 않게 묶음). 카카오맵을 못 불러오면 직접 그린 부천 지도로 대신합니다.
    자료: data/bucheon.json (부천 전체 국토부 실거래, 분양시장 레이더 캐시를 매일 받아 만듦),          data/bounds.json (부천 구·동 경계, 통계청 2013), data/kapt.json (K-apt 단지 정보, 있을 때)
    생활편의(대형마트·다이소·시장)는 카카오 장소 검색으로 찾아 이 기기에 일주일 저장 */
@@ -61,8 +61,9 @@ const PROFILE_LIST = [
 const PROFILES = Object.fromEntries(PROFILE_LIST.map((p) => [p.rt, p]));
 const YEARS = [2021, 2022, 2023, 2024, 2025, 2026];
 const COLORS = ['var(--s0)', 'var(--s1)', 'var(--s2)', 'var(--s3)', 'var(--s4)'];
-const ROLES = ['지금 집', '후보 1', '후보 2', '후보 3', '후보 4'];
-const DEFAULT_SLOTS = ['송내역파인푸르지오1단지', '라일락마을(신성미소지움)', '팰리스카운티', '라일락마을(경남아너스빌)', null];
+const ROLES = ['우리 집', '후보 1', '후보 2', '후보 3', '후보 4'];
+const MINE = '__mine__'; // 직접 입력한 우리 집
+const DEFAULT_SLOTS = [null, '라일락마을(신성미소지움)', '팰리스카운티', '라일락마을(경남아너스빌)', null]; // 우리 집은 각자 등록
 
 /* ---------------- 상태 ---------------- */
 const S = {
@@ -77,7 +78,7 @@ const slotOf = (name) => S.slots.indexOf(name);
 const cleanName = (n) => n.replace(/[()]/g, ' ').replace(/\s+/g, ' ').trim();
 const cxByName = (n) => S.data?.cx.find((c) => c.n === n) || null;
 
-/* ---------------- 칸(지금 집·후보) 만들기 ---------------- */
+/* ---------------- 칸(우리 집·후보) 만들기 ---------------- */
 function autoProfile(c) { // 조사 자료가 없는 단지: 실거래 자료로 채움
   const q = encodeURIComponent('부천 ' + c.dong + ' ' + cleanName(c.n));
   const yr = {}; YEARS.forEach((y) => { yr[y] = c.yr[y] != null ? eok(c.yr[y]) : null; });
@@ -95,9 +96,19 @@ function autoProfile(c) { // 조사 자료가 없는 단지: 실거래 자료로
     links: [['네이버부동산', `https://m.land.naver.com/search/result/${q}`], ['호갱노노', `https://hogangnono.com/search?q=${q}`]],
   };
 }
+function mineProfile(m) { // 직접 입력한 우리 집
+  return {
+    name: m.name, short: m.name, pyeong: m.area ? `전용 ${m.area}㎡` : '', addr: m.addr || '—', built: m.built || '—', age: m.built ? `${THIS_YEAR - (+String(m.built).slice(0, 4)) + 1}년차` : '',
+    hh: m.hh ? `${(+m.hh).toLocaleString()}세대` : '', floors: m.floor ? `${m.floor}층` : '—', builder: '—', far: '—', parking: '—', heat: '—', subway: '—',
+    price: m.price != null && m.price !== '' ? +m.price : null, priceNote: '직접 입력한 시세', jeonse: null, recent: '—', listing: '—', peak: '—', trade: m.memo || '—',
+    elem: m.elem || '확인 필요', mid: m.mid || '확인 필요', trend: { 2026: m.price != null && m.price !== '' ? +m.price : null }, mixed: true,
+    lat: m.lat ?? null, lng: m.lng ?? null, rt: MINE, mine: true, links: [],
+  };
+}
 function buildItems() {
   S.items = S.slots.map((name, i) => {
     if (!name) return null;
+    if (name === MINE) { const m = LS.get('myhome', null); return m ? Object.assign(mineProfile(m), { id: i, role: ROLES[i] }) : null; }
     const p = PROFILES[name], c = cxByName(name);
     if (!p && !c) return null;
     const base = p ? Object.assign({}, p) : autoProfile(c);
@@ -107,14 +118,13 @@ function buildItems() {
   });
 }
 function setSlot(i, name) {
-  if (i === 0 && !name) return; // 지금 집 칸은 비울 수 없음
   const j = name ? slotOf(name) : -1;
   if (j >= 0 && j !== i && !(j === 0 && !S.slots[i])) S.slots[j] = S.slots[i]; // 이미 다른 칸에 있으면 두 칸을 맞바꿈
   S.slots[i] = name;
   LS.set('slots', S.slots);
   buildItems(); renderAll();
   const it = S.items[i];
-  if (it && it.lat == null) Geo.locate(it).then(() => { buildItems(); renderAll(); MapView.focus(S.items[i]); });
+  if (it && it.lat == null && !it.mine) Geo.locate(it).then(() => { buildItems(); renderAll(); MapView.focus(S.items[i]); });
   else if (it) MapView.focus(it);
 }
 function setActive(i) { S.active = i; renderPick(); }
@@ -139,14 +149,15 @@ async function pool(items, n, fn) { let i = 0; await Promise.all(Array.from({ le
 function renderTiles() {
   const base = S.items[0]?.price;
   $('#tiles').innerHTML = S.items.map((a, i) => {
+    if (!a && i === 0) return `<div class="tile empty home" data-slot="0"><div class="tag"><span class="dot" style="background:${COLORS[0]}"></span>우리 집</div><div><b>우리 집을 등록해 주세요</b><br><span class="note">등록하면 후보들과 시세 차이·갈아타기 자금이 계산돼요</span></div><button class="btn primary" data-home="1">🏠 우리 집 등록</button></div>`;
     if (!a) return `<div class="tile empty${S.active === i ? ' act' : ''}" data-slot="${i}"><div class="tag"><span class="dot" style="background:${COLORS[i]}"></span>${ROLES[i]}</div><div>아직 비어 있어요</div><button class="btn" data-pickslot="${i}">단지 고르기</button></div>`;
     const d = a.price != null && i !== 0 && base != null ? a.price - base : null;
-    return `<div class="tile${S.active === i ? ' act' : ''}" data-a="${i}"><div class="tag"><span class="dot" style="background:${COLORS[i]}"></span>${esc(a.role)}${PROFILES[a.rt] ? '' : ' <span class="pill">실거래 자동</span>'}</div>
+    return `<div class="tile${S.active === i ? ' act' : ''}" data-a="${i}"><div class="tag"><span class="dot" style="background:${COLORS[i]}"></span>${esc(a.role)}${a.mine ? ' <span class="pill">직접 입력</span>' : PROFILES[a.rt] ? '' : ' <span class="pill">실거래 자동</span>'}</div>
       <div class="nm">${esc(a.short || a.name)}</div><div class="meta">${esc(a.pyeong || '')}</div>
       <div class="big" style="margin-top:6px">${fmt(a.price)}</div>
-      <div class="meta">${d != null ? `지금 집 대비 ${d >= 0 ? '+' : ''}${d.toFixed(2)}억` : esc(a.priceNote || '')}</div>
+      <div class="meta">${d != null ? `우리 집 대비 ${d >= 0 ? '+' : ''}${d.toFixed(2)}억` : esc(a.priceNote || '')}</div>
       <div class="meta" style="margin-top:4px">${esc(a.built || '')}${a.hh ? ' · ' + esc(a.hh) : ''}</div>
-      <div class="tbtns"><button class="btn sm" data-pickslot="${i}">바꾸기</button>${i ? `<button class="btn sm" data-clear="${i}" aria-label="빼기">빼기</button>` : ''}</div></div>`;
+      <div class="tbtns">${i === 0 ? `<button class="btn sm" data-home="1">${a.mine ? '수정' : '다시 등록'}</button>` : `<button class="btn sm" data-pickslot="${i}">바꾸기</button>`}<button class="btn sm" data-clear="${i}" aria-label="빼기">${i === 0 ? '등록 해제' : '빼기'}</button></div></div>`;
   }).join('');
 }
 
@@ -330,7 +341,7 @@ const KView = {
     const clamp = () => { const c = KM.map.getCenter(); const la = Math.min(b[2], Math.max(b[0], c.getLat())), lo = Math.min(b[3], Math.max(b[1], c.getLng())); if (la !== c.getLat() || lo !== c.getLng()) KM.map.setCenter(LL(la, lo)); };
     kakao.maps.event.addListener(KM.map, 'dragend', clamp);
     kakao.maps.event.addListener(KM.map, 'zoom_changed', () => { clamp(); this.drawCx(); this.drawPoi(); });
-    kakao.maps.event.addListener(KM.map, 'click', () => $('#jinfo').classList.remove('on'));
+    kakao.maps.event.addListener(KM.map, 'click', (e) => { if (S.placing) return homePlaced(e.latLng.getLat(), e.latLng.getLng()); $('#jinfo').classList.remove('on'); });
     kakao.maps.event.addListener(KM.map, 'idle', () => { const bb = KM.map.getBounds(), sw = bb.getSouthWest(), ne = bb.getNorthEast(); S.viewBB = [sw.getLat(), sw.getLng(), ne.getLat(), ne.getLng()]; if (S.f.inView) renderPick(); });
     this.drawApts(); this.drawCx();
   },
@@ -355,7 +366,7 @@ const KView = {
       if (a.lat == null) return;
       const el = document.createElement('div');
       el.className = 'mk-site'; el.style.setProperty('--c', COLORS[a.id]);
-      el.innerHTML = `<em>${a.id === 0 ? '現' : a.id}</em>${esc(a.short || a.name)} · ${fmt(a.price)}`;
+      el.innerHTML = `<em>${a.id === 0 ? '집' : a.id}</em>${esc(a.short || a.name)} · ${fmt(a.price)}`;
       el.onclick = (e) => { e.stopPropagation(); aptInfo(a); };
       KM.apts.push(new kakao.maps.CustomOverlay({ map: KM.map, position: new kakao.maps.LatLng(a.lat, a.lng), content: el, yAnchor: 1.35, zIndex: 10 + a.id }));
     });
@@ -416,7 +427,7 @@ const SView = {
     if (MAPF.cx && V.s < 1.0) { filtered().forEach((c) => { if (slotOf(c.n) >= 0) return; const g = S.geo[c.n]; if (!g) return; const [x, y] = this.scr(g[0], g[1]); if (inView(x, y)) h += `<div class="mk-cx" data-cx="${esc(c.n)}" style="left:${x}px;top:${y}px">${fmt(eok(c.amt))}<small>${esc(c.n)}</small></div>`; }); }
     if (MAPF.apt) { const placed = []; all().forEach((a) => { if (a.lat == null) return; const [x, y] = this.scr(a.lat, a.lng); if (!inView(x, y)) return; const mini = V.s > 1.2, wd = mini ? 40 : 170;
       const hit = placed.some((q) => !q.b && Math.abs(q.x - x) < wd && Math.abs(q.y - y) < 34); placed.push({ x, y, b: hit });
-      h += `<div class="mk-site${mini ? ' mini' : ''}${hit ? ' below' : ''}" data-a="${a.id}" style="left:${x}px;top:${y}px;--c:${COLORS[a.id]}"><em>${a.id === 0 ? '現' : a.id}</em>${mini ? '' : esc(a.short || a.name) + ' · ' + fmt(a.price)}</div>`; }); }
+      h += `<div class="mk-site${mini ? ' mini' : ''}${hit ? ' below' : ''}" data-a="${a.id}" style="left:${x}px;top:${y}px;--c:${COLORS[a.id]}"><em>${a.id === 0 ? '집' : a.id}</em>${mini ? '' : esc(a.short || a.name) + ' · ' + fmt(a.price)}</div>`; }); }
     $('#jlayer').innerHTML = h;
     const a0 = this.unscr(0, H), a1 = this.unscr(W, 0); S.viewBB = [a0[0], a0[1], a1[0], a1[1]];
   },
@@ -437,6 +448,7 @@ const SView = {
     window.addEventListener('resize', () => this.render());
   },
   click(e) {
+    if (S.placing) { const r = this.el().getBoundingClientRect(); const [la, lo] = this.unscr(e.clientX - r.left, e.clientY - r.top); return homePlaced(la, lo); }
     const t = document.elementFromPoint(e.clientX, e.clientY);
     const a = t && t.closest('[data-a]'), cx = t && t.closest('[data-cx]');
     if (a) return aptInfo(all().find((o) => o.id == a.dataset.a));
@@ -502,7 +514,7 @@ function renderTables() {
     ...Object.keys(POI).map((k) => [`가까운 ${POI[k][0]}`, (a) => { if (a.lat == null || !S.poi) return '—'; const p = nearestPoi(k, a.lat, a.lng); return p ? `${esc(p.n)}<br><span class="note">${fmtD(p.d)} · 도보 약 ${walkOf(p.d)}분</span>` : '—'; }])])}</tbody></table>`;
   $('#market').innerHTML = `<table>${head(list)}<tbody>${rows(list, [
     ['매매 시세', (a) => `<b>${fmt(a.price)}</b><br><span class="note">${esc(a.priceNote || '')}</span>`],
-    ['지금 집 대비', (a) => (a.id === 0 || a.price == null ? '—' : `${a.price - base >= 0 ? '+' : ''}${(a.price - base).toFixed(2)}억`)],
+    ['우리 집 대비', (a) => (a.id === 0 || a.price == null ? '—' : `${a.price - base >= 0 ? '+' : ''}${(a.price - base).toFixed(2)}억`)],
     ['전세 시세', (a) => fmt(a.jeonse) + (a.jeonse && a.price ? ` <span class="pill">전세가율 ${Math.round(a.jeonse / a.price * 100)}%</span>` : '')],
     ['최근 실거래', (a) => (Array.isArray(a.recent) ? a.recent.map((r) => `${r[0].slice(2)} · ${r[1]} · <b>${r[2]}</b>`).join('<br>') : esc(a.recent))],
     ['매물', (a) => esc(a.listing)], ['최고가', (a) => esc(a.peak)], ['참고', (a) => esc(a.trade)],
@@ -524,6 +536,7 @@ function renderCalc() {
   calc();
 }
 function calc() {
+  $('#cHomeNote').textContent = S.items[0] ? '' : '우리 집을 등록하면 매도가가 자동으로 들어가요.';
   const sell = +$('#cSell').value || 0, buy = +$('#cBuy').value || 0, tax = acqTax(buy), fee = brokerFee(buy) + brokerFee(sell);
   $('#cOut').innerHTML = `<div>추가로 필요한 금액(대략)</div><div class="k">${(buy - sell + tax + fee).toFixed(2)}억</div>
     <div class="note" style="margin-top:4px">매수가 차액 ${(buy - sell).toFixed(2)}억 + 취득세 등 ${Math.round(tax * 10000).toLocaleString()}만원 + 중개보수(양쪽) ${Math.round(fee * 10000).toLocaleString()}만원</div>`;
@@ -542,6 +555,67 @@ function renderSources() {
     ['호갱노노 · 송내역파인푸르지오1단지', 'https://hogangnono.com/apt/aCobc'], ['호갱노노 · 라일락마을경남아너스빌', 'https://hogangnono.com/apt/5uv9f'],
     ['KB부동산 · 송내역파인푸르지오1단지', 'https://kbland.kr/se/c/29492'],
   ].map((s) => `<a href="${s[1]}" target="_blank" rel="noopener">${s[0]}</a>`).join('<br>') + '<br>※ 처음 넣어 둔 4곳(송내역파인푸르지오1단지·신성미소지움·팰리스카운티·경남아너스빌)은 2026년 11월 중순 조사한 시세·매물·학교가 쓰이고, 그 밖의 단지는 매일 아침 갱신되는 실거래 자료로 채워집니다.';
+}
+
+/* ---------------- 우리 집 등록 (이 기기에만 저장) ---------------- */
+let homeDraft = {};
+function openHome() {
+  const m = S.slots[0] === MINE ? (LS.get('myhome', null) || {}) : {};
+  homeDraft = Object.assign({}, m);
+  $('#homeModal').classList.add('on'); document.body.classList.add('modal-open');
+  homeTab(S.slots[0] === MINE ? 'self' : 'find');
+  ['name', 'price', 'area', 'built', 'hh', 'floor', 'memo'].forEach((k) => { $('#h_' + k).value = m[k] ?? ''; });
+  $('#h_addr').value = m.addr || ''; $('#hLoc').textContent = m.lat ? `위치 지정됨 (${(+m.lat).toFixed(4)}, ${(+m.lng).toFixed(4)})` : '위치 없음 — 주소로 찾거나 지도에서 찍어 주세요';
+  $('#h_q').value = ''; homeSearch();
+}
+function closeHome() { $('#homeModal').classList.remove('on'); document.body.classList.remove('modal-open'); }
+function homeTab(t) { document.querySelectorAll('#homeModal [data-tab]').forEach((b) => b.classList.toggle('on', b.dataset.tab === t)); $('#hFind').style.display = t === 'find' ? '' : 'none'; $('#hSelf').style.display = t === 'self' ? '' : 'none'; }
+function homeSearch() {
+  const q = $('#h_q').value.replace(/\s/g, '');
+  const list = q ? (S.data?.cx || []).filter((c) => (c.n + c.dong).replace(/\s/g, '').includes(q)).slice(0, 40) : [];
+  $('#hResults').innerHTML = !q ? '<div class="note" style="padding:10px">단지명이나 동 이름을 입력하세요. 부천 아파트 841곳 중에서 찾습니다.</div>'
+    : list.length ? list.map((c) => `<div class="hr" data-n="${esc(c.n)}"><b>${esc(c.n)}</b><span class="note">${esc(c.dong)} · ${c.by || '—'}년${c.k?.hh ? ` · ${c.k.hh.toLocaleString()}세대` : ''} · 대표 거래가 ${fmt(eok(c.amt))}</span></div>`).join('')
+      : '<div class="note" style="padding:10px">찾는 단지가 없어요. 빌라·오피스텔이거나 최근 3년 거래가 없는 단지라면 \'직접 입력\'으로 등록하세요.</div>';
+}
+async function homeAddr() {
+  const q = $('#h_addr').value.trim(); if (!q) return;
+  if (S.mapMode !== 'kakao') { $('#hLoc').textContent = '카카오맵을 불러오지 못해 주소 검색을 쓸 수 없어요. 지도에서 찍어 주세요.'; return; }
+  const geo = new kakao.maps.services.Geocoder(), ps = new kakao.maps.services.Places();
+  let r = await new Promise((res) => geo.addressSearch(q, (d, st) => res(st === kakao.maps.services.Status.OK ? d : [])));
+  if (!r.length) r = await new Promise((res) => ps.keywordSearch(q, (d, st) => res(st === kakao.maps.services.Status.OK ? d : [])));
+  if (!r.length) { $('#hLoc').textContent = '주소를 찾지 못했어요. 도로명이나 지번으로 다시 입력하거나 지도에서 찍어 주세요.'; return; }
+  homeDraft.lat = +r[0].y; homeDraft.lng = +r[0].x; homeDraft.addr = r[0].road_address?.address_name || r[0].road_address_name || r[0].address_name || q;
+  $('#h_addr').value = homeDraft.addr; $('#hLoc').textContent = `위치 지정됨: ${homeDraft.addr}`;
+}
+function homePick() { // 지도에서 찍기
+  closeHome(); S.placing = true; $('#jmap').classList.add('placing'); $('#jhint').textContent = '우리 집 위치를 지도에서 누르세요'; $('#jhint').classList.add('on');
+  $('#jmap').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+function homePlaced(lat, lng) {
+  S.placing = false; $('#jmap').classList.remove('placing'); $('#jhint').classList.remove('on');
+  homeDraft.lat = lat; homeDraft.lng = lng; openHomeKeep();
+  $('#hLoc').textContent = `위치 지정됨 (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+}
+function openHomeKeep() { $('#homeModal').classList.add('on'); document.body.classList.add('modal-open'); homeTab('self'); }
+function homeSave() {
+  const m = Object.assign({}, homeDraft);
+  ['name', 'price', 'area', 'built', 'hh', 'floor', 'memo'].forEach((k) => { m[k] = $('#h_' + k).value.trim(); });
+  m.addr = $('#h_addr').value.trim() || m.addr || '';
+  if (!m.name) { $('#h_name').focus(); return; }
+  if (m.price === '') { $('#h_price').focus(); return; }
+  LS.set('myhome', m); S.active = 1; setSlot(0, MINE); closeHome();
+  if (m.lat != null) MapView.focus(S.items[0]);
+}
+function initHome() {
+  $('#homeModal').addEventListener('click', (e) => {
+    if (e.target.id === 'homeModal' || e.target.closest('[data-close]')) return closeHome();
+    const tb = e.target.closest('[data-tab]'); if (tb) return homeTab(tb.dataset.tab);
+    const hr = e.target.closest('.hr'); if (hr) { S.active = 1; setSlot(0, hr.dataset.n); closeHome(); }
+  });
+  $('#h_q').oninput = homeSearch;
+  $('#hAddrBtn').onclick = homeAddr; $('#h_addr').onkeydown = (e) => { if (e.key === 'Enter') { e.preventDefault(); homeAddr(); } };
+  $('#hPickBtn').onclick = homePick; $('#hSave').onclick = homeSave;
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeHome(); });
 }
 
 /* ---------------- 시작 ---------------- */
@@ -564,15 +638,17 @@ async function main() {
   $('#plist').onclick = (e) => { const c = e.target.closest('.pc'); if (!c) return; const n = c.dataset.n; if (S.slots[S.active] === n) { if (S.active) setSlot(S.active, null); } else setSlot(S.active, n); };
   $('#slotSel').onclick = (e) => { const b = e.target.closest('[data-s]'); if (b) setActive(+b.dataset.s); };
   $('#tiles').onclick = (e) => {
+    if (e.target.closest('[data-home]')) { openHome(); return; }
     const ps = e.target.closest('[data-pickslot]'); if (ps) { S.active = +ps.dataset.pickslot; renderTiles(); renderPick(); $('#pick').scrollIntoView({ behavior: 'smooth' }); return; }
-    const cl = e.target.closest('[data-clear]'); if (cl) { setSlot(+cl.dataset.clear, null); return; }
+    const cl = e.target.closest('[data-clear]'); if (cl) { if (+cl.dataset.clear === 0 && S.slots[0] === MINE) LS.set('myhome', null); setSlot(+cl.dataset.clear, null); return; }
     const t2 = e.target.closest('[data-a]'); if (t2) { const a = S.items[+t2.dataset.a]; $('#jmap').scrollIntoView({ behavior: 'smooth', block: 'center' }); MapView.focus(a); aptInfo(a); }
   };
   $('#vChart').onclick = () => { $('#chartBox').style.display = ''; $('#lineLegend').style.display = ''; $('#trendTable').style.display = 'none'; $('#vChart').classList.add('on'); $('#vTable').classList.remove('on'); };
   $('#vTable').onclick = () => { $('#chartBox').style.display = 'none'; $('#lineLegend').style.display = 'none'; $('#trendTable').style.display = ''; $('#vTable').classList.add('on'); $('#vChart').classList.remove('on'); };
   $('#cTarget').onchange = () => { $('#cBuy').dataset.touched = ''; renderCalc(); };
   $('#cSell').oninput = () => { $('#cSell').dataset.touched = '1'; calc(); }; $('#cBuy').oninput = () => { $('#cBuy').dataset.touched = '1'; calc(); };
-  renderSources(); renderAll();
+  initHome(); renderSources(); renderAll();
+  if (!S.slots[0] && !LS.get('homeAsked', false)) { LS.set('homeAsked', true); setTimeout(openHome, 400); }
 
   // 지도
   const ok = await Kakao.load();

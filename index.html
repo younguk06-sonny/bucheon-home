@@ -14,14 +14,14 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
 <div class="wrap">
   <header>
     <h1><img src="icons/icon-192.png" alt="" width="30" height="30"> 부천 집 비교</h1>
-    <p class="sub">지금 집과 후보 4곳을 부천 아파트 중에서 조건으로 골라 비교합니다. 칸을 고른 뒤 목록이나 지도에서 단지를 누르면 그 칸에 들어갑니다. <span id="asOf"></span></p>
+    <p class="sub">우리 집을 등록하고, 갈아탈 후보 4곳을 부천 아파트 중에서 조건으로 골라 비교합니다. 등록한 내용은 이 기기에만 저장돼 다른 사람에게 보이지 않아요. <span id="asOf"></span></p>
   </header>
 
   <div class="grid5" id="tiles"></div>
@@ -101,7 +101,7 @@
   <section class="card">
     <h2>갈아타기 자금 간단 계산</h2>
     <div class="calc">
-      <label class="note">지금 집 매도 예상가(억)<input type="number" step="0.01" id="cSell" value="6.05"></label>
+      <label class="note">우리 집 매도 예상가(억) <span id="cHomeNote" class="warnline"></span><input type="number" step="0.01" id="cSell" value=""></label>
       <label class="note">매수 대상<select id="cTarget" class="btn"></select></label>
       <label class="note">매수가(억)<input type="number" step="0.01" id="cBuy"></label>
     </div>
@@ -111,7 +111,34 @@
 
   <section class="card"><h2>출처</h2><div class="note" id="sources"></div></section>
 </div>
+<div class="modal" id="homeModal" role="dialog" aria-modal="true" aria-labelledby="homeTitle">
+  <div class="mbox">
+    <button class="x" data-close aria-label="닫기">×</button>
+    <h2 id="homeTitle">🏠 우리 집 등록</h2>
+    <p class="note">등록한 내용은 이 기기(브라우저)에만 저장되고 서버로 보내지지 않아요. 다른 사람은 각자 자기 집을 등록해 쓰면 됩니다.</p>
+    <div class="seg mtabs"><button class="btn on" data-tab="find">부천 아파트에서 찾기</button><button class="btn" data-tab="self">직접 입력</button></div>
+    <div id="hFind">
+      <input type="text" id="h_q" placeholder="단지명 또는 동 (예: 파인푸르지오, 송내동)" aria-label="우리 집 단지 검색">
+      <div class="hres" id="hResults"></div>
+    </div>
+    <div id="hSelf" style="display:none">
+      <div class="hform">
+        <label class="span2">이름 *<input type="text" id="h_name" placeholder="예: 우리 집, ○○빌라 302호"></label>
+        <label>현재 시세(억) *<input type="number" step="0.01" id="h_price" placeholder="예: 6.05"></label>
+        <label>전용면적(㎡)<input type="number" step="0.1" id="h_area" placeholder="예: 84.9"></label>
+        <label>준공(연도)<input type="text" id="h_built" placeholder="예: 2016"></label>
+        <label>세대수<input type="number" id="h_hh" placeholder="예: 353"></label>
+        <label>층<input type="number" id="h_floor" placeholder="예: 23"></label>
+        <label>메모<input type="text" id="h_memo" placeholder="예: 대출 잔액·특징"></label>
+        <label class="span2">주소<span class="addrrow"><input type="text" id="h_addr" placeholder="도로명 또는 지번 주소"><button class="btn" id="hAddrBtn" type="button">위치 찾기</button></span></label>
+        <div class="span2 note" id="hLoc"></div>
+        <div class="span2"><button class="btn" id="hPickBtn" type="button">📍 지도에서 직접 찍기</button></div>
+      </div>
+      <div class="mfoot"><button class="btn" data-close type="button">취소</button><button class="btn primary" id="hSave" type="button">등록</button></div>
+    </div>
+  </div>
+</div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=3"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
