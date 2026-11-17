@@ -121,6 +121,12 @@ if os.path.exists(KAPT):
             if best.get('wsub') in WALK:
                 r['k']['wmin'] = WALK[best['wsub']]
     print(f'K-apt 연결: {hit}/{len(rows)}개 단지')
+    left = [k for ks in by_dong.values() for k in ks if id(k) not in used_k]
+    print(f'연결 안 된 K-apt 단지 {len(left)}곳:')
+    for k in left:
+        cand = [r for i, r in enumerate(rows) if i not in used_r and r['dong'] == re.sub(r'\d+동$', '동', (k.get('dong') or '').strip())]
+        cand.sort(key=lambda r: -score(norm(r['n'], r['dong']), k['_n']))
+        print('  K:', k.get('name'), '|', k.get('dong'), '| hh', k.get('hh'), '→ 후보:', [(r['n'], round(score(norm(r['n'], r['dong']), k['_n']), 2)) for r in cand[:3]])
 
 # ---------- 타입(전용면적)별 거래 ----------
 TYPES = os.path.join(os.path.dirname(__file__), '..', 'data', 'types.json')
