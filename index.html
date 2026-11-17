@@ -14,21 +14,45 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=5">
+<link rel="stylesheet" href="style.css?v=7">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
 <div class="wrap">
   <header>
     <h1><img src="icons/icon-192.png" alt="" width="30" height="30"> 부천 집 비교</h1>
-    <p class="sub">우리 집을 등록하고, 갈아탈 후보 4곳을 부천 아파트 중에서 조건으로 골라 비교합니다. 등록한 내용은 이 기기에만 저장돼 다른 사람에게 보이지 않아요. <span id="asOf"></span></p>
+    <p class="sub">우리 집을 등록하고, 갈아탈 후보 2곳을 부천 아파트 중에서 조건으로 골라 우리 집과 함께 최대 3곳을 비교합니다. 등록한 내용은 이 기기에만 저장돼 다른 사람에게 보이지 않아요. <span id="asOf"></span></p>
   </header>
 
-  <div class="grid5" id="tiles"></div>
+  <div class="grid3" id="tiles"></div>
 
-  <section class="card">
+  <section class="card" id="pick">
     <div class="toolbar">
-      <h2>부천 지도</h2>
+      <h2>🔎 아파트 찾아보기 <span class="note">조건에 맞는 아파트만 목록과 아래 지도에 가격으로 나와요</span></h2>
+      <span class="note" id="pickCount"></span>
+    </div>
+    <div class="fgrp slotrow"><span class="flab">🎯 넣을 칸</span><div class="chips" id="slotSel"></div></div>
+    <button class="btn fsum" id="fToggle" type="button"><span id="fSummary"></span><b>조건 바꾸기 ▾</b></button>
+    <div class="filters" id="filters">
+      <div class="fgrp"><span class="flab">📍 동</span><div class="chips" id="fDong"></div></div>
+      <div class="fgrp"><span class="flab">💰 대표 거래가</span>
+        <input type="number" id="fMin" step="0.5" min="0" value="6" aria-label="최소 가격(억)"> ~ <input type="number" id="fMax" step="0.5" min="0" value="9" aria-label="최대 가격(억)"> 억</div>
+      <div class="fgrp"><span class="flab">📐 면적</span><div class="chips" id="fArea"></div></div>
+      <div class="fgrp"><span class="flab">🏗️ 준공</span><div class="chips" id="fAge"></div></div>
+      <div class="fgrp"><span class="flab">👪 세대수</span><div class="chips" id="fHh"></div></div>
+      <div class="fgrp"><span class="flab">🚉 역세권</span><div class="chips" id="fWalk"></div></div>
+      <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명·동 검색 (이름으로 찾으면 다른 조건은 무시)" aria-label="단지명 검색"></div>
+      <div class="fgrp"><button class="chip" id="fView" style="--c:var(--s4)">지도 화면 안만</button></div>
+      <div class="fgrp"><span class="flab">정렬</span><select id="fSort" class="btn"><option value="amt">가격 낮은 순</option><option value="amtd">가격 높은 순</option><option value="n12">거래 많은 순</option><option value="by">새 아파트 순</option><option value="py">평당가 낮은 순</option></select></div>
+    </div>
+    <p class="note warnline" id="pickNote"></p>
+    <div class="plist" id="plist"></div>
+    <p class="note">대표 거래가 = 최근 12개월 월별 실거래 중위가격의 거래량 가중평균(12개월 거래가 1건 이하면 36개월). 여러 평형이 섞인 단지는 평형마다 값이 다르니, 대표 전용면적을 함께 보세요.</p>
+  </section>
+
+  <section class="card" id="mapsec">
+    <div class="toolbar">
+      <h2>🗺️ 부천 지도</h2>
       <div class="chips" id="mapChips"></div>
     </div>
     <div class="jmap" id="jmap">
@@ -40,7 +64,7 @@
         <button class="jbtn" id="zOut" aria-label="축소">－</button>
       </div>
       <div class="jview">
-        <button class="jbtn on" id="vCand">후보 지역</button><button class="jbtn" id="vJs">중동·상동</button><button class="jbtn" id="vAll">부천 전체</button>
+        <button class="jbtn on" id="vCand">후보 아파트</button><button class="jbtn" id="vJs">중동·상동</button><button class="jbtn" id="vAll">송내동</button>
       </div>
       <div class="jhint" id="jhint"></div>
       <div class="jinfo" id="jinfo"></div>
@@ -49,33 +73,9 @@
     <div class="legend" id="mapLegend"></div>
   </section>
 
-  <section class="card" id="pick">
-    <div class="toolbar">
-      <h2>단지 고르기 <span class="note">조건에 맞는 부천 아파트가 아래 목록과 지도 위 가격 칩으로 나와요</span></h2>
-      <span class="note" id="pickCount"></span>
-    </div>
-    <div class="fgrp slotrow"><span class="flab">넣을 칸</span><div class="chips" id="slotSel"></div></div>
-    <div class="filters">
-      <div class="fgrp"><span class="flab">동</span><div class="chips" id="fDong"></div></div>
-      <div class="fgrp"><span class="flab">대표 거래가</span>
-        <input type="number" id="fMin" step="0.5" min="0" value="6" aria-label="최소 가격(억)"> ~ <input type="number" id="fMax" step="0.5" min="0" value="9" aria-label="최대 가격(억)"> 억</div>
-      <div class="fgrp"><span class="flab">면적</span><div class="chips" id="fArea"></div></div>
-      <div class="fgrp"><span class="flab">준공</span><div class="chips" id="fAge"></div></div>
-      <div class="fgrp"><span class="flab">거래</span><div class="chips" id="fDeal"></div></div>
-      <div class="fgrp"><span class="flab">세대수</span><div class="chips" id="fHh"></div></div>
-      <div class="fgrp"><span class="flab">역세권</span><div class="chips" id="fWalk"></div></div>
-      <div class="fgrp grow"><input type="text" id="fQ" placeholder="단지명·동 검색 (이름으로 찾으면 다른 조건은 무시)" aria-label="단지명 검색"></div>
-      <div class="fgrp"><button class="chip" id="fView" style="--c:var(--s4)">지도 화면 안만</button></div>
-      <div class="fgrp"><span class="flab">정렬</span><select id="fSort" class="btn"><option value="amt">가격 낮은 순</option><option value="amtd">가격 높은 순</option><option value="n12">거래 많은 순</option><option value="by">새 아파트 순</option><option value="py">평당가 낮은 순</option></select></div>
-    </div>
-    <p class="note warnline" id="pickNote"></p>
-    <div class="plist" id="plist"></div>
-    <p class="note">대표 거래가 = 최근 12개월 월별 실거래 중위가격의 거래량 가중평균(12개월 거래가 1건 이하면 36개월). 여러 평형이 섞인 단지는 평형마다 값이 다르니, 대표 전용면적을 함께 보세요.</p>
-  </section>
-
   <section class="card">
     <div class="toolbar">
-      <h2>최근 5년 시세 (연평균 실거래가)</h2>
+      <h2>📈 최근 5년 시세 (연평균 실거래가)</h2>
       <div class="seg"><button class="btn on" id="vChart">차트</button><button class="btn" id="vTable">표</button></div>
     </div>
     <div class="legend" id="lineLegend"></div>
@@ -84,28 +84,28 @@
     <p class="note">조사 자료가 있는 4곳은 해당 평형의 국토부 실거래 연평균(디아파트 집계, 실선). 그 밖의 단지는 단지 전체 거래의 연평균이라 평형이 섞일 수 있고 2024년부터 있습니다(점선).</p>
   </section>
 
-  <section class="card"><h2>단지 개요</h2><p class="note warnline" id="overviewNote"></p><div class="scroll" id="overview"></div></section>
+  <section class="card"><h2>🏢 단지 개요</h2><p class="note warnline" id="overviewNote"></p><div class="scroll" id="overview"></div></section>
 
   <section class="card">
-    <h2>면적·타입</h2>
+    <h2>📐 면적·타입</h2>
     <div class="scroll" id="types"></div>
     <p class="note">타입별 가격은 국토부 실거래(전용면적별). 공급면적·방·욕실 수를 확인하지 못한 타입은 전용면적으로 일반적인 값을 추정해 '추정'·'일반 구성'으로 표시했어요. 평면도는 저작권 문제로 앱에 직접 넣지 않고 네이버부동산 링크로 연결합니다.</p>
   </section>
 
   <section class="card">
-    <h2>현재 시세 · 최근 실거래 · 매물</h2>
+    <h2>💰 현재 시세 · 최근 실거래 · 매물</h2>
     <div class="scroll" id="market"></div>
     <p class="note">매물 수·호가는 매일 바뀝니다. 계약 전에는 각 단지 링크에서 다시 확인하세요.</p>
   </section>
 
   <section class="card">
-    <h2>초·중학교 배치</h2>
+    <h2>🏫 초·중학교 배치</h2>
     <div class="scroll" id="schools"></div>
     <p class="note">초등학교는 통학구역, 중학교는 학교군 안에서 지망·추첨으로 정해집니다. 정확한 배정은 부천교육지원청 학구도에서 주소로 확인하세요.</p>
   </section>
 
   <section class="card">
-    <h2>갈아타기 자금 간단 계산</h2>
+    <h2>🧮 갈아타기 자금 간단 계산</h2>
     <div class="calc">
       <label class="note">우리 집 매도 예상가(억) <span id="cHomeNote" class="warnline"></span><input type="number" step="0.01" id="cSell" value=""></label>
       <label class="note">매수 대상<select id="cTarget" class="btn"></select></label>
@@ -115,7 +115,7 @@
     <p class="note">취득세는 1주택·전용 85㎡ 이하 근사(6억 이하 1%, 6~9억 누진, 지방교육세 포함). 중개보수는 매도·매수 각각 상한요율 근사. 대출 대환·중도상환수수료·이사비는 빠져 있습니다.</p>
   </section>
 
-  <section class="card"><h2>출처</h2><div class="note" id="sources"></div></section>
+  <section class="card"><h2>📚 출처</h2><div class="note" id="sources"></div></section>
 </div>
 <div class="modal" id="homeModal" role="dialog" aria-modal="true" aria-labelledby="homeTitle">
   <div class="mbox">
@@ -145,6 +145,6 @@
   </div>
 </div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=6"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
