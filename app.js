@@ -25,6 +25,7 @@ const PROFILE_LIST = [
     listing: '26평 매물 정보 미확인 (33평 최저호가 6.8억)', peak: '6.97억 (2021.07)', trade: '거래 적음 · 해당 평형 누적 23건',
     elem: [['솔안초', '507m', '통학구역']], mid: [['부천여중', '734m', '배정 가능권'], ['부천남중', '—', '인근 단지 기준 권역']],
     trend: { 2021: 5.99, 2022: 6.90, 2023: null, 2024: 6.02, 2025: 6.06, 2026: 6.05 },
+    types: [{ ex: 63.0, sup: 87.72, py: 26 }, { ex: 75.0, py: 30 }, { ex: 84.99, sup: 111.33, py: 34 }], typeNote: '공급면적 87.72~111.33㎡ (KB부동산)',
     lat: 37.4853, lng: 126.7524, q: '송내역파인푸르지오1단지', dong: '송내동',
     links: [['호갱노노', 'https://hogangnono.com/apt/aCobc'], ['KB부동산', 'https://kbland.kr/se/c/29492']] },
   { name: '상동 라일락마을 신성미소지움', short: '신성미소지움', pyeong: '26평 A타입 (전용 59.96㎡)',
@@ -35,6 +36,7 @@ const PROFILE_LIST = [
     listing: '13건 · 최저 6.7억 · 중간 7.5억 · 최고 8.5억', peak: '7.6억 (2026.08, 15층)', trade: '매물 소화 약 2.2개월 (원미구 평균 6.8)',
     elem: [['석천초', '112m', '길 건너']], mid: [['석천중', '392m', '가장 가까움'], ['상일중', '1.1km', '']],
     trend: { 2021: 6.32, 2022: 6.11, 2023: 5.27, 2024: 5.62, 2025: 5.86, 2026: 6.58 },
+    types: [{ ex: 59.96, py: 26, label: '26A' }, { ex: 59.88, py: 26, label: '26B' }], typeNote: '955세대 전부 26평형 (A·B타입)',
     lat: 37.5018, lng: 126.7490, q: '라일락마을신성미소지움', rt: '라일락마을(신성미소지움)', dong: '상동',
     links: [['리치고', 'https://m.richgo.ai/realty/danji/a6UZrwj'], ['호갱노노', 'https://hogangnono.com/apt/5us41']] },
   { name: '중동 팰리스카운티', short: '팰리스카운티', pyeong: '34평 (전용 84.99㎡)',
@@ -45,6 +47,7 @@ const PROFILE_LIST = [
     listing: '28건 · 최저 6.6억', peak: '9.05억 (2021.10, 13층)', trade: '최근 1년 매매 87건',
     elem: [['중동초', '약 200m', '단지 내']], mid: [['계남중', '—', '리치고 요약 기준'], ['부천중', '—', '학군표 기준 · 엇갈림']],
     trend: { 2021: 7.45, 2022: 6.84, 2023: 6.41, 2024: 6.75, 2025: 6.86, 2026: 7.16 },
+    types: [{ ex: 59.98, py: 24, hh: 820 }, { ex: 84.99, py: 34, hh: 1603 }, { ex: 84.99, py: 35, hh: 277 }, { ex: 102.56, py: 39, hh: 220 }, { ex: 132.61, py: 49, hh: 170 }], typeNote: '평형별 세대수: 부동산지인',
     lat: 37.4900, lng: 126.7672, q: '팰리스카운티', rt: '팰리스카운티', dong: '중동',
     links: [['리치고', 'https://m.richgo.ai/realty/danji/a6NcABA']] },
   { name: '상동 라일락마을 경남아너스빌', short: '경남아너스빌', pyeong: '34평 단일 (전용 84.80㎡)',
@@ -55,6 +58,7 @@ const PROFILE_LIST = [
     listing: '매물 수 미확인 (링크에서 확인)', peak: '8.4억 (2026.11, 16층 · 신고가)', trade: '관리비 평균 월 30만원',
     elem: [['석천초', '약 150m', '인접 단지 기준 · 확인 필요']], mid: [['석천중', '약 400m', '인접 단지 기준'], ['상일중', '약 1km', '']],
     trend: { 2021: 7.12, 2022: 7.61, 2023: 6.14, 2024: 6.30, 2025: 6.49, 2026: 7.38 },
+    types: [{ ex: 84.8, sup: 109, py: 33, hh: 474, label: '109타입' }], typeNote: '474세대 단일 평형 (공급 109㎡)',
     lat: 37.5009, lng: 126.7474, q: '라일락마을경남아너스빌', rt: '라일락마을(경남아너스빌)', dong: '상동',
     links: [['호갱노노', 'https://hogangnono.com/apt/5uv9f']] },
 ];
@@ -102,7 +106,7 @@ function mineProfile(m) { // 직접 입력한 우리 집
     hh: m.hh ? `${(+m.hh).toLocaleString()}세대` : '', floors: m.floor ? `${m.floor}층` : '—', builder: '—', far: '—', parking: '—', heat: '—', subway: '—',
     price: m.price != null && m.price !== '' ? +m.price : null, priceNote: '직접 입력한 시세', jeonse: null, recent: '—', listing: '—', peak: '—', trade: m.memo || '—',
     elem: m.elem || '확인 필요', mid: m.mid || '확인 필요', trend: { 2026: m.price != null && m.price !== '' ? +m.price : null }, mixed: true,
-    lat: m.lat ?? null, lng: m.lng ?? null, rt: MINE, mine: true, links: [],
+    lat: m.lat ?? null, lng: m.lng ?? null, rt: MINE, mine: true, links: [], areaM: m.area ? +m.area : null,
   };
 }
 function buildItems() {
@@ -161,6 +165,43 @@ function renderTiles() {
   }).join('');
 }
 
+/* ---------------- 면적·타입 ---------------- */
+// 공급면적·방·욕실을 모르는 타입은 전용면적으로 일반적인 값을 추정 (화면에 '추정' 표시)
+const estSup = (ex, by) => ex * (by && by >= 2010 ? 1.33 : 1.30);
+const estRooms = (ex, by) => (ex < 40 ? [1, 1] : ex < 50 ? [2, 1] : ex < 66 ? [3, by && by >= 2000 ? 2 : 1] : ex < 95 ? [3, 2] : ex < 125 ? [4, 2] : [4, 2]);
+function groupTypes(t) { // 전용 1㎡ 안쪽 차이는 한 타입으로
+  const g = [];
+  for (const r of (t || []).slice().sort((a, b) => a[0] - b[0])) {
+    const last = g[g.length - 1];
+    if (last && r[0] - last.ex0 < 1.0) { last.n += r[1]; last.n12 += r[2]; if (r[3] != null) { last.s12 += r[3] * r[2]; last.c12 += r[2]; } if (r[4] > last.last) { last.last = r[4]; last.fl = r[5]; last.amt = r[6]; } if (r[7] > last.max) { last.max = r[7]; last.maxD = r[8]; } last.ex = Math.max(last.ex, r[0]); continue; }
+    g.push({ ex0: r[0], ex: r[0], n: r[1], n12: r[2], s12: (r[3] || 0) * r[2], c12: r[3] != null ? r[2] : 0, last: r[4], fl: r[5], amt: r[6], max: r[7], maxD: r[8] });
+  }
+  return g.map((x) => Object.assign(x, { avg12: x.c12 ? Math.round(x.s12 / x.c12) : null }));
+}
+function typesOf(a) { // 비교 칸 하나의 타입 목록
+  const c = a.rt && a.rt !== MINE ? cxByName(a.rt) : null, by = c?.by || (+String(a.built).slice(0, 4)) || null;
+  const tr = groupTypes(c?.t);
+  const base = a.types ? a.types.map((t) => Object.assign({}, t)) : a.mine ? (a.areaM ? [{ ex: a.areaM }] : []) : tr.map((x) => ({ ex: x.ex }));
+  return base.map((t) => {
+    const m = tr.find((x) => Math.abs(x.ex - t.ex) < 1.2) || null;
+    const sup = t.sup || null, supE = sup || estSup(t.ex, by);
+    const rooms = t.rooms || estRooms(t.ex, by);
+    return { ex: t.ex, sup, supE, py: t.py || Math.round(supE / 3.3058), label: t.label, hh: t.hh, rooms, roomsEst: !t.rooms, tr: m };
+  });
+}
+function typeCell(a) {
+  const ts = typesOf(a);
+  if (!ts.length) return '<span class="note">타입 정보 없음</span>';
+  const src = S.data?.typesSrc === 'sample' ? ' <span class="note">(일부 거래)</span>' : '';
+  return ts.map((t) => `<div class="ty"><div class="ty1"><b>${t.label ? esc(t.label) + ' · ' : ''}${t.py}평형</b>${t.hh ? ` <span class="pill">${t.hh.toLocaleString()}세대</span>` : ''}</div>
+    <div class="ty2">전용 ${t.ex.toFixed(2)}㎡ · 공급 ${t.sup ? t.sup.toFixed(2) + '㎡' : '약 ' + Math.round(t.supE) + '㎡<span class="est">추정</span>'}</div>
+    <div class="ty2">방 ${t.rooms[0]} · 욕실 ${t.rooms[1]}${t.roomsEst ? '<span class="est">일반 구성</span>' : ''}</div>
+    ${t.tr ? `<div class="ty3">${t.tr.avg12 ? `12개월 평균 <b>${fmt(eok(t.tr.avg12))}</b> (${t.tr.n12}건) · ` : ''}최근 ${fmt(eok(t.tr.amt))} <span class="note">${t.tr.last.slice(2, 4)}.${t.tr.last.slice(4, 6)} ${t.tr.fl || ''}층</span>${src}</div>` : ''}</div>`).join('') +
+    (a.typeNote ? `<div class="note">${esc(a.typeNote)}</div>` : '') +
+    (!a.mine ? `<a class="fp" href="https://m.land.naver.com/search/result/${encodeURIComponent('부천 ' + (a.dong || '') + ' ' + cleanName(a.rt || a.name))}" target="_blank" rel="noopener">📐 평면도 보기 (네이버부동산)</a>` : '');
+}
+const typeAreas = (c) => { const g = groupTypes(c.t); return g.length ? g.map((x) => x.ex) : c.area ? [c.area] : []; };
+
 /* ---------------- 단지 고르기 (조건 필터) ---------------- */
 const AREA_F = [['all', '전체'], ['s', '60㎡ 이하'], ['m', '60~85㎡'], ['l', '85㎡ 초과']];
 const AGE_F = [['all', '전체'], ['2000', '2000년 이후'], ['2010', '2010년 이후'], ['2018', '2018년 이후']];
@@ -176,9 +217,7 @@ function filtered(opt = {}) {
     const p = c.amt / 10000;
     if (f.min !== '' && p < +f.min) return false;
     if (f.max !== '' && p > +f.max) return false;
-    if (f.area === 's' && !(c.area <= 60.5)) return false;
-    if (f.area === 'm' && !(c.area > 60.5 && c.area <= 85.5)) return false;
-    if (f.area === 'l' && !(c.area > 85.5)) return false;
+    if (f.area !== 'all') { const ar = typeAreas(c); const ok = (x) => (f.area === 's' ? x <= 60.5 : f.area === 'm' ? x > 60.5 && x <= 85.5 : x > 85.5); if (!ar.some(ok)) return false; }
     if (f.age !== 'all' && !(c.by >= +f.age)) return false;
     if ((c.n12 || 0) < f.deal) return false;
     if (f.hh && !((c.k?.hh || 0) >= f.hh)) return false;
@@ -234,7 +273,7 @@ function renderPick() {
     const si = slotOf(c.n);
     return `<div class="pc${si >= 0 ? ' sel' : ''}" data-n="${esc(c.n)}" style="${si >= 0 ? `--sc:${COLORS[si]}` : ''}">
      <div class="r1"><b>${esc(c.n)}</b><span class="p">${fmt(eok(c.amt))}</span></div>
-     <div class="m">${esc(c.dong)} · ${c.by || '—'}년 준공${c.k?.hh ? ` · ${c.k.hh.toLocaleString()}세대` : ''} · 대표 전용 ${c.area ? Math.round(c.area) + '㎡' : '—'}</div>
+     <div class="m">${esc(c.dong)} · ${c.by || '—'}년 준공${c.k?.hh ? ` · ${c.k.hh.toLocaleString()}세대` : ''} · ${(() => { const ar = groupTypes(c.t).map((x) => Math.round(x.ex)); return ar.length ? '전용 ' + [...new Set(ar)].join('·') + '㎡' : '대표 전용 ' + (c.area ? Math.round(c.area) + '㎡' : '—'); })()}</div>
      ${(() => { const w = walkMin(c); return w ? `<div class="m">🚉 ${w.src === 'k' ? esc(c.k.station || '지하철역') + ' 도보 ' + esc(w.txt) : esc(w.st.n) + '역 도보 ' + esc(w.txt) + ' (추정)'}</div>` : ''; })()}
      <div class="m">12개월 ${c.n12}건 · 평당 ${c.py ? c.py.toLocaleString() + '만' : '—'}${c.yr[2024] && c.yr[2026] ? ` · 24→26년 ${((c.yr[2026] / c.yr[2024] - 1) * 100).toFixed(0)}%` : ''}</div>
      ${si >= 0 ? `<span class="fav" style="color:${COLORS[si]}">✓ ${ROLES[si]}${PROFILES[c.n] ? ' · 조사 자료 있음' : ''}</span>` : `<span class="add">${ROLES[S.active]}(으)로 넣기 →</span>`}</div>`;
@@ -519,6 +558,7 @@ function renderTables() {
     ['최근 실거래', (a) => (Array.isArray(a.recent) ? a.recent.map((r) => `${r[0].slice(2)} · ${r[1]} · <b>${r[2]}</b>`).join('<br>') : esc(a.recent))],
     ['매물', (a) => esc(a.listing)], ['최고가', (a) => esc(a.peak)], ['참고', (a) => esc(a.trade)],
     ['링크', (a) => (a.links || []).map((l) => `<a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a>`).join(' · ')]])}</tbody></table>`;
+  $('#types').innerHTML = `<table>${head(list)}<tbody><tr><th>타입</th>${list.map((a) => `<td>${typeCell(a)}</td>`).join('')}</tr></tbody></table>`;
   const sch = (arr) => (Array.isArray(arr) ? arr.map((s) => `<b>${esc(s[0])}</b> ${esc(s[1])}${s[2] ? ` <span class="pill">${esc(s[2])}</span>` : ''}`).join('<br>') : esc(arr));
   $('#schools').innerHTML = `<table>${head(list)}<tbody>${rows(list, [['초등학교', (a) => sch(a.elem)], ['중학교', (a) => sch(a.mid)]])}</tbody></table>`;
 }

@@ -38,6 +38,11 @@ jobs:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: python3 scripts/fetch_kapt.py
 
+      - name: 타입(전용면적)별 실거래 받기 (인증키가 있을 때만)
+        env:
+          DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
+        run: python3 scripts/fetch_trades.py
+
       - name: 부천 단지 자료 만들기
         run: python3 scripts/build_data.py _src
 

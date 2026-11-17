@@ -185,3 +185,9 @@ body.modal-open{overflow:hidden}
 .addrrow{display:flex;gap:6px}
 .mfoot{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
 .jmap.placing,.jmap.placing #kmap{cursor:crosshair}
+
+.ty{padding:6px 0;border-bottom:1px dashed var(--line);min-width:190px}
+.ty:last-of-type{border-bottom:0}
+.ty1{font-size:13px}.ty2{font-size:12px;color:var(--text-secondary)}.ty3{font-size:12px;margin-top:2px}
+.est{font-size:10px;color:var(--text-muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:4px}
+.fp{display:inline-block;margin-top:6px;font-size:12px;font-weight:700}

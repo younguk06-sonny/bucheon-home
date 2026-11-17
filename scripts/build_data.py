@@ -122,9 +122,35 @@ if os.path.exists(KAPT):
                 r['k']['wmin'] = WALK[best['wsub']]
     print(f'K-apt 연결: {hit}/{len(rows)}개 단지')
 
+# ---------- 타입(전용면적)별 거래 ----------
+TYPES = os.path.join(os.path.dirname(__file__), '..', 'data', 'types.json')
+types_src = None
+if os.path.exists(TYPES):
+    with open(TYPES, encoding='utf-8') as fh:
+        tj = json.load(fh)
+    types_src = 'full:' + tj.get('asOf', '')
+    for r in rows:
+        t = tj['t'].get(r['n'] + '|' + r['dong'])
+        if t:
+            r['t'] = [x for x in t if x[1] >= 1]
+if not types_src:   # 원자료가 없으면 레이더 캐시에 있는 일부 거래로 타입만 추림
+    types_src = 'sample'
+    for k, c in acc.items():
+        r = next((x for x in rows if x['n'] == c['apt'] and x['dong'] == c['dong']), None)
+        if not r or not c['d']: continue
+        g = {}
+        for d in c['d']:   # [날짜, 전용, 층, 금액]
+            a = round(d[1], 2); t = g.setdefault(a, {'n': 0, 'n12': 0, 's12': 0, 'last': '', 'max': 0})
+            t['n'] += 1
+            if d[0][:6] in last12: t['n12'] += 1; t['s12'] += d[3]
+            if d[0] >= t['last']: t['last'] = d[0]; t['lastFl'] = str(d[2]); t['lastAmt'] = d[3]
+            if d[3] > t['max']: t['max'] = d[3]; t['maxD'] = d[0]
+        r['t'] = [[a, t['n'], t['n12'], round(t['s12'] / t['n12']) if t['n12'] else None, t['last'], t.get('lastFl'), t.get('lastAmt'), t['max'], t.get('maxD')] for a, t in sorted(g.items())]
+print('타입 자료:', types_src)
+
 rows.sort(key=lambda r: -(r['n12'] or 0))
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as fh:
-    json.dump({'asOf': months[-1], 'from': months[0], 'quarters': quarters, 'src': '국토교통부 아파트 매매 실거래가 (분양시장 레이더 수집)', 'kaptAsOf': kapt_asof,
+    json.dump({'asOf': months[-1], 'from': months[0], 'quarters': quarters, 'src': '국토교통부 아파트 매매 실거래가 (분양시장 레이더 수집)', 'kaptAsOf': kapt_asof, 'typesSrc': types_src,
                'cx': rows}, fh, ensure_ascii=False, separators=(',', ':'))
 print(f'{len(rows)}개 단지 · {months[0]}~{months[-1]} → {os.path.normpath(OUT)}')
