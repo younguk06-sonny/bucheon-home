@@ -7,7 +7,7 @@ import json, os, sys, time, urllib.parse, urllib.request
 
 KEY = os.environ.get('SCHOOLINFO_API_KEY', '').strip()
 OUT = os.path.join(os.path.dirname(__file__), '..', 'data', 'schools.json')
-URL = 'https://www.schoolinfo.go.kr/openApi.do'
+URLS = ['https://www.schoolinfo.go.kr/openApi.do', 'http://www.schoolinfo.go.kr/openApi.do', 'https://schoolinfo.go.kr/openApi.do']
 SIDO, SGGS = '41', ['41192', '41194', '41196']   # 경기도 부천시 원미구·소사구·오정구
 
 
@@ -15,19 +15,22 @@ def call(api_type, sgg, year=None):
     q = {'apiKey': KEY, 'apiType': api_type, 'sidoCode': SIDO, 'sggCode': sgg, 'schulKndCode': '02'}
     if year:
         q['pbanYr'] = str(year)
-    url = URL + '?' + urllib.parse.urlencode(q)
-    for a in range(3):
+    last = None
+    for a in range(4):
+        url = URLS[a % len(URLS)] + '?' + urllib.parse.urlencode(q)
         try:
-            req = urllib.request.Request(url, headers={'User-Agent': 'bucheon-home/1.0'})
-            with urllib.request.urlopen(req, timeout=40) as r:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (bucheon-home)', 'Accept': 'application/json'})
+            with urllib.request.urlopen(req, timeout=60) as r:
                 j = json.loads(r.read().decode('utf-8', 'replace'))
             if j.get('resultCode') != 'success':
-                raise RuntimeError(j.get('resultMsg'))
+                msg = j.get('resultMsg')
+                if 'apiKey' in str(msg):
+                    print('  인증키 오류:', msg); return None
+                raise RuntimeError(msg)
             return j.get('list') or []
         except Exception as e:
-            if a == 2:
-                print('  실패', api_type, sgg, year, e); return None
-            time.sleep(2)
+            last = e; time.sleep(3)
+    print('  실패', api_type, sgg, year, last); return None
 
 
 def num(v):
