@@ -28,3 +28,8 @@ Settings → Pages → Source를 **GitHub Actions**로 바꾸면 첫 배포가 �
 3. Actions → 자료 만들기 및 배포 → Run workflow.
 
 키를 넣기 전에는 세대수 필터가 동작하지 않고, 역 도보 시간은 지도 위치로 가장 가까운 역까지 거리를 재서 추정합니다(직선거리×1.3, 분당 70m).
+
+## 초등학교 학년별 인원 켜기 (한 번만)
+1. https://www.schoolinfo.go.kr/ng/go/pnnggo_a01_m0.do 에서 로그인 후 **OpenAPI 인증키 신청** (무료·즉시 발급)
+2. 저장소 Settings → Secrets and variables → Actions → New repository secret: 이름 `SCHOOLINFO_API_KEY`, 값에 인증키
+3. Actions → 자료 만들기 및 배포 → Run workflow

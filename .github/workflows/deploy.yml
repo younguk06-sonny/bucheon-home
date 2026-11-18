@@ -53,6 +53,11 @@ jobs:
           DATA_GO_KR_KEY: ${{ secrets.DATA_GO_KR_KEY }}
         run: python3 scripts/fetch_trades.py
 
+      - name: 부천 초등학교 학년별 학생수 받기 (학교알리미 인증키가 있을 때만)
+        env:
+          SCHOOLINFO_API_KEY: ${{ secrets.SCHOOLINFO_API_KEY }}
+        run: python3 scripts/fetch_schools.py
+
       - name: 부천 단지 자료 만들기
         run: python3 scripts/build_data.py _src
 

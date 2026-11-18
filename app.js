@@ -604,8 +604,35 @@ function renderTables() {
     ['매물', (a) => esc(a.listing)], ['최고가', (a) => esc(a.peak)], ['참고', (a) => esc(a.trade)],
     ['링크', (a) => (a.links || []).map((l) => `<a href="${l[1]}" target="_blank" rel="noopener">${l[0]}</a>`).join(' · ')]])}</tbody></table>`;
   $('#types').innerHTML = `<table>${head(list)}<tbody><tr><th>타입</th>${list.map((a) => `<td>${typeCell(a)}</td>`).join('')}</tr></tbody></table>`;
-  const sch = (arr) => (Array.isArray(arr) ? arr.map((s) => `<b>${esc(s[0])}</b> ${esc(s[1])}${s[2] ? ` <span class="pill">${esc(s[2])}</span>` : ''}`).join('<br>') : esc(arr));
-  $('#schools').innerHTML = `<table>${head(list)}<tbody>${rows(list, [['초등학교', (a) => sch(a.elem)], ['중학교', (a) => sch(a.mid)]])}</tbody></table>`;
+  $('#schools').innerHTML = `<table>${head(list)}<tbody>${rows(list, [['🏫 초등학교', (a) => schoolCell(a)]])}</tbody></table>`;
+  $('#schoolNote').textContent = S.schools?.year ? `학년별 인원은 학교알리미 ${S.schools.year}년 공시(4월 1일 기준)예요.` : '학년별 인원은 학교알리미 인증키(SCHOOLINFO_API_KEY)를 저장소에 넣으면 채워져요.';
+}
+
+/* ---------------- 초등학교 (학교알리미 학년별 학생수) ---------------- */
+const normSch = (n) => String(n || '').replace(/초등학교$|초$/, '').replace(/\s/g, '');
+function gradeBox(sc) {
+  if (!sc?.s) return '<div class="note">학년별 인원 정보 없음</div>';
+  const max = Math.max(...sc.s.filter(Boolean), 1);
+  return `<div class="grades">${sc.s.map((v, g) => `<div class="gr"><span class="gl">${g + 1}학년</span><span class="gb"><i style="width:${Math.round((v || 0) / max * 100)}%"></i></span><span class="gv">${v ?? '—'}명${sc.c?.[g] ? `<small> · ${sc.c[g]}반</small>` : ''}</span></div>`).join('')}
+    <div class="gt">전교 ${sc.total ? sc.total.toLocaleString() + '명' : '—'}${sc.perClass ? ` · 학급당 ${sc.perClass}명` : ''}</div></div>`;
+}
+function schoolCell(a) {
+  const list = S.schools?.schools || [];
+  const out = [], seen = new Set();
+  // 조사해 둔 배정 학교
+  if (Array.isArray(a.elem)) for (const e of a.elem) {
+    const sc = list.find((x) => normSch(x.name) === normSch(e[0]));
+    const d = sc && a.lat != null && sc.lat ? distM(a.lat, a.lng, sc.lat, sc.lng) : null;
+    out.push(`<div class="sch"><div class="sh"><b>${esc(e[0])}</b> <span class="pill selpill">${esc(e[2] || '배정')}</span> <span class="note">${d ? fmtD(d) + ' · 도보 약 ' + walkOf(d) + '분' : esc(e[1] || '')}</span></div>${S.schools ? gradeBox(sc) : ''}</div>`);
+    if (sc) seen.add(sc.code); else seen.add(normSch(e[0]));
+  }
+  // 위치 기준 가까운 초등학교
+  if (a.lat != null && list.length) {
+    const near = list.filter((x) => x.lat && !seen.has(x.code)).map((x) => ({ x, d: distM(a.lat, a.lng, x.lat, x.lng) })).sort((p, q) => p.d - q.d).filter((n, k) => !out.length || n.d < 1000).slice(0, out.length ? 1 : 2);
+    near.forEach(({ x, d }) => out.push(`<div class="sch"><div class="sh"><b>${esc(x.name)}</b> <span class="pill">가까운 학교</span> <span class="note">${fmtD(d)} · 도보 약 ${walkOf(d)}분</span></div>${gradeBox(x)}</div>`));
+  }
+  if (!out.length) return `<span class="note">${a.lat == null ? '위치를 찾으면 가까운 초등학교가 나와요' : '확인 필요'}</span>`;
+  return out.join('');
 }
 
 /* ---------------- 계산기 ---------------- */
@@ -664,6 +691,7 @@ function renderSources() {
     ['국토교통부 아파트 매매 실거래가 (분양시장 레이더 수집) — 아파트 찾아보기 목록', 'https://github.com/younguk06-sonny/New-Build_Rader'],
     ['국토교통부 공동주택관리정보시스템(K-apt) — 세대수·지하철역 도보 시간 (인증키를 넣었을 때)', 'https://www.k-apt.go.kr/'],
     ['카카오 장소 검색 — 대형마트·다이소·시장 위치', 'https://map.kakao.com/'],
+    ['학교알리미 — 초등학교 학년별·학급별 학생수 (인증키를 넣었을 때)', 'https://www.schoolinfo.go.kr/'],
     ['통계청 행정구역 경계 2013 (southkorea-maps)', 'https://github.com/southkorea/southkorea-maps'],
     ['리치고 · 라일락신성미소지움', 'https://m.richgo.ai/realty/danji/a6UZrwj'], ['리치고 · 팰리스카운티', 'https://m.richgo.ai/realty/danji/a6NcABA'],
     ['디아파트 · 송내역파인푸르지오1단지', 'https://dapt.kr/apt/BmA296.html'], ['디아파트 · 라일락마을신성미소지움', 'https://dapt.kr/apt/BmA011.html'],
@@ -757,6 +785,7 @@ async function main() {
   const t = LS.get('theme', null); if (t) document.documentElement.dataset.theme = t;
   $('#themeBtn').onclick = () => { const r = document.documentElement; const dark = r.dataset.theme ? r.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; r.dataset.theme = dark ? 'light' : 'dark'; LS.set('theme', r.dataset.theme); };
   const [data, bounds] = await Promise.all([getJSON('data/bucheon.json'), getJSON('data/bounds.json')]);
+  S.schools = await getJSON('data/schools.json').catch(() => null);
   S.data = data; S.bounds = bounds;
   $('#asOf').textContent = `실거래 자료(부천 전체 ${data.cx.length}개 단지): ${data.from.slice(0, 4)}.${data.from.slice(4)} ~ ${data.asOf.slice(0, 4)}.${data.asOf.slice(4)}.`;
   buildItems();

@@ -25,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교하기">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
@@ -110,9 +110,9 @@
   </section>
 
   <section class="card">
-    <h2>🏫 초·중학교 배치</h2>
+    <h2>🏫 초등학교 배치 · 학년별 인원</h2>
     <div class="scroll" id="schools"></div>
-    <p class="note">초등학교는 통학구역, 중학교는 학교군 안에서 지망·추첨으로 정해집니다. 정확한 배정은 부천교육지원청 학구도에서 주소로 확인하세요.</p>
+    <p class="note"><span id="schoolNote"></span> '배정'은 조사해 둔 통학구역 학교, '가까운 학교'는 위치 기준 직선거리로 고른 학교예요. 정확한 배정은 부천교육지원청 학구도에서 주소로 확인하세요.</p>
   </section>
 
   <section class="card">
@@ -166,6 +166,6 @@
   </div>
 </div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=10"></script>
+<script src="app.js?v=11"></script>
 </body>
 </html>
