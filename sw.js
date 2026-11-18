@@ -1,6 +1,6 @@
 // 부천 집 비교 서비스워커 — 앱 화면을 기기에 저장해 두어 빠르게 열리게 함
 // 앱을 고친 뒤 다시 올릴 때는 아래 버전 숫자를 하나 올려 주세요 (v1 → v2)
-const CACHE = 'bucheon-home-v10';
+const CACHE = 'bucheon-home-v11';
 const FILES = ['./', './index.html', './style.css', './app.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/favicon-32.png'];
 

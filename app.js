@@ -620,11 +620,42 @@ function renderCalc() {
   if ($('#cBuy').dataset.for !== sel.value || !$('#cBuy').dataset.touched) { $('#cBuy').value = a?.price != null ? a.price.toFixed(2) : ''; $('#cBuy').dataset.for = sel.value; }
   calc();
 }
+const pmt = (P, ratePct, yrs) => { const r = ratePct / 100 / 12, n = Math.round(yrs * 12); if (!P || !n) return 0; return r ? P * r / (1 - Math.pow(1 + r, -n)) : P / n; }; // 원리금균등 월 상환액
+const LOAN_DEF = { lBal: '', lOldRate: '', lOldYrs: 25, lCash: '', lNewRate: 4.7, lNewYrs: 30, lKeep: false };
+function initLoan() {
+  const v = Object.assign({}, LOAN_DEF, LS.get('loan', {}));
+  document.querySelectorAll('[data-ls]').forEach((el) => {
+    if (el.type === 'checkbox') el.checked = !!v[el.id]; else el.value = v[el.id] ?? '';
+    el.addEventListener(el.type === 'checkbox' ? 'change' : 'input', () => {
+      const o = {}; document.querySelectorAll('[data-ls]').forEach((x) => { o[x.id] = x.type === 'checkbox' ? x.checked : x.value; }); LS.set('loan', o); calc();
+    });
+  });
+}
 function calc() {
   $('#cHomeNote').textContent = S.items[0] ? '' : '우리 집을 등록하면 매도가가 자동으로 들어가요.';
-  const sell = +$('#cSell').value || 0, buy = +$('#cBuy').value || 0, tax = acqTax(buy), fee = brokerFee(buy) + brokerFee(sell);
-  $('#cOut').innerHTML = `<div>추가로 필요한 금액(대략)</div><div class="k">${(buy - sell + tax + fee).toFixed(2)}억</div>
-    <div class="note" style="margin-top:4px">매수가 차액 ${(buy - sell).toFixed(2)}억 + 취득세 등 ${Math.round(tax * 10000).toLocaleString()}만원 + 중개보수(양쪽) ${Math.round(fee * 10000).toLocaleString()}만원</div>`;
+  const n = (id) => +$('#' + id).value || 0;
+  const sell = n('cSell'), buy = n('cBuy'), tax = acqTax(buy), feeB = brokerFee(buy), feeS = sell ? brokerFee(sell) : 0;
+  const bal = n('lBal'), oldR = n('lOldRate'), oldY = n('lOldYrs') || 25, cash = n('lCash'), newR = n('lNewRate'), newY = n('lNewYrs') || 30, keep = $('#lKeep').checked;
+  const fromSale = sell - feeS - (keep ? 0 : bal);           // 집 팔고 손에 남는 돈
+  const need = buy + tax + feeB - fromSale - cash;           // 새로 빌려야 할 돈
+  const newLoan = Math.max(0, need);
+  const nowPay = pmt(bal * 1e8, oldR, oldY);                 // 지금 매달 내는 돈(추정)
+  const newPay = pmt(newLoan * 1e8, newR, newY) + (keep ? nowPay : 0);
+  const totalDebt = newLoan + (keep ? bal : 0);
+  const won = (x) => Math.round(x / 1e4).toLocaleString() + '만원';
+  const ltv = buy ? totalDebt / buy * 100 : 0;
+  $('#cOut').innerHTML = `
+    <div class="cgrid">
+      <div><div class="note">추가로 필요한 금액</div><div class="k">${(buy - sell + tax + feeB + feeS).toFixed(2)}억</div>
+        <div class="note">매수가 차액 ${(buy - sell).toFixed(2)}억 + 취득세 등 ${Math.round(tax * 1e4).toLocaleString()}만원 + 중개보수(양쪽) ${Math.round((feeB + feeS) * 1e4).toLocaleString()}만원</div></div>
+      <div><div class="note">새로 받아야 할 대출</div><div class="k">${newLoan.toFixed(2)}억</div>
+        <div class="note">${need < 0 ? `오히려 ${(-need).toFixed(2)}억이 남아요` : `집 판 돈 ${fromSale.toFixed(2)}억${keep ? '' : '(기존 대출 갚은 뒤)'} · 현금 ${cash.toFixed(2)}억 반영`}</div></div>
+      <div><div class="note">갈아탄 뒤 월 상환액</div><div class="k">${won(newPay)}</div>
+        <div class="note">${bal ? `지금 약 ${won(nowPay)} → <b>${newPay - nowPay >= 0 ? '+' : ''}${won(newPay - nowPay)}</b>` : '기존 대출을 넣으면 지금과 비교해 드려요'}</div></div>
+      <div><div class="note">총 대출 / 매수가 (LTV)</div><div class="k">${totalDebt.toFixed(2)}억 · ${ltv.toFixed(0)}%</div>
+        <div class="note">${keep ? `기존 ${bal.toFixed(2)}억(${oldR || '—'}%) 유지 + 새 대출 ${newLoan.toFixed(2)}억(${newR}%)` : `새 대출 ${newLoan.toFixed(2)}억을 ${newR}%·${newY}년으로`}</div></div>
+    </div>
+    ${bal && oldR && newR > oldR && !keep ? `<div class="note warnline" style="margin-top:8px">기존 대출(${oldR}%)을 갚고 새 대출(${newR}%)로 바꾸는 조건이에요. 기존 대출을 새 집으로 옮길 수 있다면 '기존 대출을 새 집으로 옮겨 계속 쓰기'를 켜서 비교해 보세요.</div>` : ''}`;
 }
 
 /* ---------------- 출처 ---------------- */
@@ -753,7 +784,7 @@ async function main() {
   $('#vTable').onclick = () => { $('#chartBox').style.display = 'none'; $('#lineLegend').style.display = 'none'; $('#trendTable').style.display = ''; $('#vTable').classList.add('on'); $('#vChart').classList.remove('on'); };
   $('#cTarget').onchange = () => { $('#cBuy').dataset.touched = ''; renderCalc(); };
   $('#cSell').oninput = () => { $('#cSell').dataset.touched = '1'; calc(); }; $('#cBuy').oninput = () => { $('#cBuy').dataset.touched = '1'; calc(); };
-  initHome(); renderSources(); renderAll(); initFold();
+  initHome(); initLoan(); renderSources(); renderAll(); initFold();
   if (!S.slots[0] && !LS.get('homeAsked', false)) { LS.set('homeAsked', true); setTimeout(openHome, 400); }
 
   // 지도

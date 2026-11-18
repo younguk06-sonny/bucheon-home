@@ -211,3 +211,12 @@ section.card.closed{padding-top:12px;padding-bottom:12px}
 .tsel select{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--text-primary);border-radius:8px;padding:5px 6px;width:100%}
 .ty.tysel{background:color-mix(in srgb,var(--accent) 7%,transparent);border-radius:8px;padding:6px 8px;margin:0 -8px}
 .selpill{background:var(--accent);color:#fff}
+
+.calch{font-size:14px;margin:16px 0 8px}
+.calc4{grid-template-columns:repeat(3,minmax(0,1fr))}
+.calc .chk{flex-direction:row;display:flex;align-items:center;gap:6px;grid-column:1/-1}
+.calc .chk input{width:auto;margin:0}
+.cgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media(max-width:900px){.cgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.calc>label:not(.chk){display:flex;flex-direction:column}
+@media(max-width:700px){.calc4{grid-template-columns:repeat(2,minmax(0,1fr))}.calc4>label{font-size:11.5px;letter-spacing:-.03em}.cgrid .k{font-size:17px}}

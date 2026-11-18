@@ -25,7 +25,7 @@
 <meta name="apple-mobile-web-app-title" content="부천 집 비교하기">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=8">
+<link rel="stylesheet" href="style.css?v=9">
 </head>
 <body>
 <button class="btn toggle-theme" id="themeBtn" aria-label="밝기 전환">◐</button>
@@ -116,14 +116,24 @@
   </section>
 
   <section class="card">
-    <h2>🧮 갈아타기 자금 간단 계산</h2>
+    <h2>🧮 갈아타기 자금·대출 계산</h2>
     <div class="calc">
       <label class="note">우리 집 매도 예상가(억) <span id="cHomeNote" class="warnline"></span><input type="number" step="0.01" id="cSell" value=""></label>
       <label class="note">매수 대상<select id="cTarget" class="btn"></select></label>
       <label class="note">매수가(억)<input type="number" step="0.01" id="cBuy"></label>
     </div>
+    <h3 class="calch">🏦 대출</h3>
+    <div class="calc calc4">
+      <label class="note">기존 대출 잔액(억)<input type="number" step="0.01" min="0" id="lBal" data-ls></label>
+      <label class="note">기존 금리(%)<input type="number" step="0.01" min="0" id="lOldRate" data-ls></label>
+      <label class="note">남은 기간(년)<input type="number" step="1" min="1" id="lOldYrs" data-ls></label>
+      <label class="note">보탤 현금(억)<input type="number" step="0.01" min="0" id="lCash" data-ls></label>
+      <label class="note">새 대출 금리(%)<input type="number" step="0.01" min="0" id="lNewRate" data-ls></label>
+      <label class="note">새 대출 기간(년)<input type="number" step="1" min="1" id="lNewYrs" data-ls></label>
+      <label class="note chk span2"><input type="checkbox" id="lKeep" data-ls> 기존 대출을 새 집으로 옮겨 계속 쓰기 (담보 변경 가능할 때)</label>
+    </div>
     <div class="out" id="cOut"></div>
-    <p class="note">취득세는 1주택·전용 85㎡ 이하 근사(6억 이하 1%, 6~9억 누진, 지방교육세 포함). 중개보수는 매도·매수 각각 상한요율 근사. 대출 대환·중도상환수수료·이사비는 빠져 있습니다.</p>
+    <p class="note">취득세는 1주택·전용 85㎡ 이하 근사(6억 이하 1%, 6~9억 누진, 지방교육세 포함). 중개보수는 매도·매수 각각 상한요율 근사. 월 상환액은 원리금균등 기준이며, 중도상환수수료·이사비·대출 부대비용은 빠져 있습니다. 실제 대출 가능 금액은 LTV·DSR 규제와 소득에 따라 달라지니 은행에서 확인하세요. 새 대출 금리 기본값 4.7%는 대신증권 리포트(2026.11)의 '주담대 금리 4% 중후반 정체' 전망을 따랐습니다.</p>
   </section>
 
   <section class="card"><h2>📚 출처</h2><div class="note" id="sources"></div></section>
@@ -156,6 +166,6 @@
   </div>
 </div>
 <div class="tip" id="tip"></div>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>
